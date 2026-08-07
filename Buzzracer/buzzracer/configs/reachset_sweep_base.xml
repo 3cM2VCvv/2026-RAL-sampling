@@ -1,0 +1,32 @@
+<config>
+  <settings dt="0.02">
+    <experiment_type>Simulation</experiment_type>
+  </settings>
+  <track>saved</track>
+  <extensions>
+    <extension handle="laptimer">Laptimer</extension>
+    <!-- <extension car_graphics="True" handle="visualization">VisualizationGL</extension> -->
+    <extension handle="simulator"
+      match_time="False"
+      state_noise_enabled="True"
+      state_noise_magnitude="0.1"
+      state_noise_type="lateral_only"
+      state_noise_direction="uniform">DynamicBicycleCartesianSimulator</extension>
+    <extension handle="boundary_checker">BoundaryChecker</extension>
+    <extension handle="auto_stopper"
+      wall_clock="60"
+      crash_stop="True"
+      stall_timeout="10"
+      lap_count="1">AutoStopper</extension>
+  </extensions>
+  <cars>
+    <car>
+      <name>Red Porsche</name>
+      <hardware>Offboard</hardware>
+      <config_name>audi_11</config_name>
+      <controller horizon="30" max_speed="2.0" use_reachsets="True">
+        <type>ImmraxController</type>
+      </controller>
+    </car>
+  </cars>
+</config>

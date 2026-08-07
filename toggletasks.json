@@ -1,0 +1,10 @@
+{
+  "tasks": [
+    {
+      "name": "Run Immrax Controller",
+      "cmd": "uv run python -m buzzracer.scripts.run stanley_immrax",
+      "cwd": "${global_cwd}/Buzzracer",
+      "tags": ["run"]
+    }
+  ]
+}

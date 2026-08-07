@@ -1,0 +1,196 @@
+import matplotlib.pyplot as plt
+from math import radians
+from buzzracer.tracks.track_factory import TrackFactory
+import os
+from xml.dom import minidom
+import numpy as np
+from numpy import linalg as LA
+import math
+import torch
+import sys
+sys.path.insert(0, '../..')  # inorder to run within the folder
+sys.path.insert(0, '..')  # inorder to run within the folder
+
+
+class Track:
+
+    def __init__(self):
+        return
+
+    def load_orca_track(self):
+        self.path = '../car_racing_simulator/ORCA_OPT/'
+        self.N = 999
+        # ref point location
+        self.X = np.loadtxt(self.path + 'x_center.txt')[:, 0]
+        self.Y = np.loadtxt(self.path + 'x_center.txt')[:, 1]
+        # ??
+        self.s = np.loadtxt(self.path + 's_center.txt')
+        self.phi = np.loadtxt(self.path + 'phi_center.txt')
+        self.kappa = np.loadtxt(self.path + 'kappa_center.txt')
+        self.diff_s = np.mean(np.diff(self.s))
+
+        self.d_upper = np.loadtxt(self.path + 'con_inner.txt')
+        self.d_lower = np.loadtxt(self.path + 'con_outer.txt')
+        self.d_upper[520:565] = np.clip(self.d_upper[520:565], 0.2, 1)
+        # self.d_lower[520:565] = np.clip(self.d_lower[520:565], -1, -0.2)
+        self.border_angle_upper = np.loadtxt(self.path + 'con_angle_inner.txt')
+        self.border_angle_lower = np.loadtxt(self.path + 'con_angle_outer.txt')
+
+    def load_rcp_track(self):
+        config_xml_path = os.path.join(os.path.dirname(
+            os.path.abspath(__file__)), 'config.xml')
+        '''
+        try:
+            config = minidom.parse('config.xml')
+        except FileNotFoundError:
+            config = minidom.parse('copg/rcvip_simulator/config.xml')
+        '''
+        config = minidom.parse(config_xml_path)
+
+        config_track = config.getElementsByTagName('track')[0]
+        self.track = TrackFactory(None, config_track, 'full')
+        N, X, Y, s, phi, kappa, diff_s, d_upper, d_lower, border_angle_upper, border_angle_lower = self.get_orca_style_track()
+
+        self.N = N
+        self.X = X
+        self.Y = Y
+        self.s = s
+        self.phi = phi
+        self.kappa = kappa
+        self.diff_s = diff_s
+
+        self.d_upper = d_upper
+        self.d_lower = d_lower
+        # not really used
+        self.border_angle_upper = border_angle_upper
+        self.border_angle_lower = border_angle_lower
+        return
+
+    def get_orca_style_track(self):
+        ''' load rcp track as ORCA compatible representation '''
+        N = self.track.discretized_raceline_len = 1024
+        s = self.track.s_vec = s_vec = np.linspace(
+            0, self.track.raceline_len_m, self.track.discretized_raceline_len)
+        # resample to fixed interval s_vec
+        self.track.r = ref_path = np.array(
+            splev(s_vec % self.track.raceline_len_m, self.track.raceline_s, der=0)).T
+        X = self.track.r[:, 0].flatten()
+        Y = self.track.r[:, 1].flatten()
+
+        diff_s = s_vec[1]-s_vec[0]
+        dr, ddr = self.track.calc_derivative(ref_path, ds=diff_s)
+        self.track.dr = dr
+        self.track.ddr = ddr
+        # TODO verify sign
+        kappa = self.track.calc_curvature(dr, ddr)
+
+        # raceline heading
+        # dr = splev(s_vec%self.track.raceline_len_m,self.track.raceline_s,der=1)
+        phi = np.arctan2(dr[:, 1], dr[:, 0])
+        # wrap angle
+        d_phi = np.diff(phi)
+        d_phi = (d_phi + np.pi) % (2*np.pi) - np.pi
+        phi = phi[0] + np.hstack([0, np.cumsum(d_phi)]) + 2*np.pi
+
+        # describe track boundary as offset from raceline
+        left_limit, right_limit = self.track.create_boundary(ref_path, phi)
+        # TODO: verify sign and upper/lower ordering
+        d_upper = np.array(left_limit)
+        d_lower = -np.array(right_limit)
+
+        border_angle_upper = phi + 40/180*np.pi
+        border_angle_lower = phi - 40/180*np.pi
+
+        # ccw 90 deg
+        # R = np.array([[0,-1],[1,0]])
+        # tangent_dir = (R @ self.dr.T)/np.linalg.norm(self.dr,axis=1)
+        # self.left_boundary = (tangent_dir * self.left_limit).T + self.ref_path
+        # self.right_boundary = (tangent_dir * self.right_limit).T + self.ref_path
+        return (N, X, Y, s, phi, kappa, diff_s, d_upper, d_lower, border_angle_upper, border_angle_lower)
+
+    def pos_at_index(self, i):
+        return np.array([self.X[i], self.Y[i]])
+
+    def vec_to_point(self, index, x):
+        return np.array([x[0] - self.X[index], x[1] - self.Y[index]])
+
+    def vec_track(self, index):
+        if index >= self.N - 1:
+            next_index = 0
+        else:
+            next_index = index + 1
+
+        return np.array([self.X[next_index] - self.X[index], self.Y[next_index] - self.Y[index]])
+
+    def interpol(self, name, index, rela_proj):
+        index = index % self.N
+        next_index = (index + 1) % self.N
+
+        if name == 's':
+            return self.s[index] + (rela_proj * (self.s[next_index] - self.s[index]))
+        if name == 'phi':
+            return self.phi[index] + (rela_proj * (self.phi[next_index] - self.phi[index]))
+        if name == 'kappa':
+            return self.kappa[index] + (rela_proj * (self.kappa[next_index] - self.kappa[index]))
+
+    def from_sto_pos(self, s):
+
+        index = math.floor(s / self.diff_s)
+        rela_proj = (s - self.s[index]) / self.diff_s
+        pos = [self.X[index], self.Y[index]] + self.vec_track(index) * rela_proj
+        return pos
+
+    def from_sto_index(self, s):
+        if s > self.s[-1]:
+            s = s - self.s[-1]
+        elif s < 0:
+            s = s + self.s[-1]
+
+        s = max(s, 0)
+        s = min(s, self.s[-1])
+
+        index = math.floor(s / self.diff_s)
+        rela_proj = (s - self.s[index]) / self.diff_s
+        return [index, rela_proj]
+
+    # x_local: s,d,mu, (progress, lateral_err, heading)
+    # return: pos_global (x,y,heading)
+    def from_localto_global(self, x_local):
+        s = x_local[0]
+        d = x_local[1]
+        mu = x_local[2]
+
+        [index, rela_proj] = self.from_sto_index(s)
+        pos_center = [self.X[index], self.Y[index]] + \
+            self.vec_track(index) * rela_proj
+        phi = self.interpol('phi', index, rela_proj)
+
+        pos_global = pos_center + d * np.array([-np.sin(phi), np.cos(phi)])
+        heading = phi + mu
+        return [pos_global[0], pos_global[1], heading]
+
+    def wrap_mu(self, mu):
+        if mu < -np.pi:
+            mu = mu + 2 * np.pi
+        elif mu > np.pi:
+            mu = mu - 2 * np.pi
+        return mu
+
+
+if __name__ == '__main__':
+    track = Track()
+    track.load_rcp_track()
+    s = 0.1
+    d = 0.0
+    mu = radians(90)
+    global_state = track.from_localto_global((s, d, mu))
+    print(f'global_state: {global_state}')
+    pos_vec = []
+    for s in np.linspace(0, track.track.raceline_len_m, 300):
+        d = 0.0
+        mu = radians(90)
+        global_state = track.from_localto_global((s, d, mu))
+        pos_vec.append([global_state[0], global_state[1]])
+    pos_vec = np.array(pos_vec)
+    plt.plot(pos_vec[:, 0], pos_vec[:, 1])
+    plt.show()

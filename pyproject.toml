@@ -1,0 +1,54 @@
+[project]
+name = "online-reachability"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12.0,<3.13"
+dependencies = [
+    "cvxopt==1.3.2",
+    "cvxpy==1.7.2",
+    "deprecated>=1.3.1",
+    "gpytorch~=1.14",
+    "gymnasium==1.2.0",
+    "inputs==0.5",
+    "matplotlib>=3.5.1",
+    "moderngl~=5.12.0",
+    "moderngl-window~=3.1.1",
+    "mosek==11.0.28",
+    "numpy==2.2.6",
+    "pandas==2.3.2",
+    "pillow==11.3.0",
+    "progressbar33==2.4",
+    "pygame==2.6.1",
+    "pyserial==3.5",
+    "pyttsx3==2.99",
+    "scipy~=1.16.0",
+    "seaborn==0.13.2",
+    "sympy==1.14.0",
+    "torch==2.8.0",
+    "immrax[cuda]",
+    "buzzracer",
+    "pyqt5>=5.15.11",
+    "setuptools<82",
+    "dvc[s3]>=3.67.1",
+    "dvclive>=3.49.1",
+    "opencv-python-headless>=4.13.0.92",
+    "h5py>=3.16.0",
+    "scikit-image>=0.26.0",
+    "mat73>=0.65",
+    "ipywidgets>=8.1.8",
+    "ipykernel>=6.29.5",
+    "nbconvert>=7.17.1",
+    "jupyterlab>=4.6.2",
+]
+
+[tool.uv.workspace]
+members = [
+    "immrax",
+    "Buzzracer",
+]
+
+[tool.uv.sources]
+immrax = { workspace = true, editable = true }
+buzzracer = { workspace = true }
+

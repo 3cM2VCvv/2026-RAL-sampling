@@ -1,0 +1,84 @@
+# DVC parameters for the reachset_sweep pipeline.
+#
+# `sweep` defines the swept axes; each axis is referenced as a matrix variable
+# in dvc.yaml, producing one `reachset_trial` stage per combination
+# (10 x 3 x 3 x 3 x 2 x 2 = 1080 trials).
+#
+# `sim` holds the fixed, output-affecting parameters lifted out of
+# Buzzracer/buzzracer/configs/reachset_sweep_base.xml. They are passed to every
+# trial and tracked via the stage's `params:` entry, so changing any of them
+# re-runs the whole sweep.
+
+sweep:
+  init_point_index: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+  init_offset_name: [center, inside, outside]
+  centering_weight_factor: [0.1, 0.5, 1.0]
+  velocity_scale_factor: [1.0, 1.25, 1.5]
+  state_noise_direction: [uniform, adversarial_away]
+  use_reachsets: [false, true]
+
+# Knobs for the reachset-recording pipeline (transform_recording + blend_retime).
+recording:
+  aspect: "2:3" # output aspect ratio for the top-down warp
+  fps: 60 # blend_retime output frame rate
+  blend_mode: blend # how to fill output times between control steps
+  alpha: 1.0 # reachset overlay opacity in [0, 1]
+
+# ---------------------------------------------------------------------------
+# Reconstruction of the paper's "RC warehouse" track from brt_rc_wh_fine_v3.mat.
+#
+# Two independent margins. `buffer` shrinks the drivable corridor itself: `lx` is a
+# signed distance field, so subtracting a constant slides the lx=0 wall inward by
+# that many meters, and it is applied once at the source so the boundary ray-casts,
+# the collision check and the eq.-16 l(x) cost all agree. `raceline_offset` only
+# keeps the racing line off the wall inside the QP smoother.
+track:
+  buffer: 0.0 # [m] shrink the drivable corridor; negative widens it
+  raceline_offset: 0.08 # [m] QP margin for the racing line only
+
+# ---------------------------------------------------------------------------
+# DualGuard-MPPI RC-car comparison (arXiv 2502.01924, Section VI).
+#
+# `rc` holds the fixed vehicle (eq. 15) + cost (eq. 16) + planner settings, passed to
+# every trial via the stage's `params:` entry.  `rc_sweep` defines the swept axes:
+#   use_reachsets - our reachset-aware planner vs. a point-trajectory planner.
+#   cost_type     - how eq. 16 measures distance from the track center: the paper's
+#                   l(x) distance-to-obstacle field, or Frenet error against the
+#                   min-curvature racing line.
+#   prng_seed     - repeats, for the mean +/- std of CompTime / Speed.
+rc:
+  L: 0.235 # wheelbase (m)
+  v_max: 1.4 # eq.16 target speed / eq.15 V upper bound (m/s)
+  v_min: 0.7 # eq.15 V lower bound (m/s)
+  delta_max_deg: 25 # eq.15 steering bound (deg)
+  disturbance: 0.1 # eq.15 d_x, d_y ~ U[-0.1, 0.1]
+  centering_weight_factor: 120.0 # eq.16 K_c
+  collision_weight: 50.0 # eq.16 P(x), per colliding step (lx cost only)
+  progress_weight: 0.0 # lap-progress reward augmenting eq.16 (0 = strict eq.16)
+  horizon: 100 # planning horizon (steps); Table III uses 100
+  num_samples: 1000 # parallel rollouts (Table III uses 1000)
+  planning_dt: 0.02 # 50 Hz control loop
+  v_dt_std: 5.0 # sampling std on dV/dt
+  delta_dt_std: 2.356194490192345 # sampling std on d(delta)/dt = 3*pi/4
+  lap_count: 3 # Speed is averaged over the completed laps
+  wall_clock: 120 # max simulated seconds before giving up
+  stall_timeout: 10 # give up if no forward lap-progress for this long
+  substeps: 4 # plant euler substeps per control cycle
+
+rc_sweep:
+  use_reachsets: [true, false]
+  cost_type: [lx, frenet]
+  prng_seed: [1, 2, 3]
+
+sim:
+  dt: 0.02 # settings/@dt
+  state_noise_enabled: true # simulator/@state_noise_enabled
+  state_noise_magnitude: 0.1 # simulator/@state_noise_magnitude
+  state_noise_type: lateral_only # simulator/@state_noise_type
+  wall_clock: 60 # auto_stopper/@wall_clock
+  crash_stop: true # auto_stopper/@crash_stop
+  stall_timeout: 10 # auto_stopper/@stall_timeout
+  lap_count: 3 # auto_stopper/@lap_count
+  horizon: 30 # controller/@horizon
+  max_speed: 2.0 # controller/@max_speed
+  prng_seed: 42 # deterministic base seed (combined per-trial)

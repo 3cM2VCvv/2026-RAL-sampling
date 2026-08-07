@@ -1,0 +1,288 @@
+schema: '2.0'
+stages:
+  raceline_to_mat:
+    cmd: uv run python utils/raceline_to_mat.py
+    deps:
+    - path: ../Buzzracer/buzzracer/data/raceline.p
+      hash: md5
+      md5: b5fbb874e0e0db8239951935e61a0dfd
+      size: 43957
+    - path: utils/raceline_to_mat.py
+      hash: md5
+      md5: d86921574fbbf55e4f4099d0758e8ebc
+      size: 11920
+    outs:
+    - path: matlab/buzzracer_track_data.mat
+      hash: md5
+      md5: cf3434674b605cb91d23a6806cc33d5c
+      size: 231398
+  brt_buzzracer:
+    cmd: matlab -batch "addpath(genpath('~/Documents/MATLAB/helperOC')); 
+      addpath(genpath('~/Documents/MATLAB/ToolboxLS')); 
+      run('brt_buzzracer_track.m')"
+    deps:
+    - path: '@BuzzracerDynamicBicycle'
+      hash: md5
+      md5: c9672e23289098f8c243a66e29259946.dir
+      size: 18836
+      nfiles: 5
+    - path: brt_buzzracer_track.m
+      hash: md5
+      md5: 418f0448db1ee03f8c5043d8ee155bbb
+      size: 5942
+    - path: buzzracer_track_data.mat
+      hash: md5
+      md5: cf3434674b605cb91d23a6806cc33d5c
+      size: 231398
+    - path: createGridND.m
+      hash: md5
+      md5: 8382ad35d162c1ba01ce196c09806ff7
+      size: 1874
+    - path: export_brt_with_gradient.m
+      hash: md5
+      md5: 8b380f8a4cc67ff3c0c4ab0b0bea5fb3
+      size: 6626
+    - path: shapeRCPTrack2D.m
+      hash: md5
+      md5: feda73568ca933452badbe099360baf9
+      size: 4143
+    outs:
+    - path: brt_buzzracer_environment.mat
+      hash: md5
+      md5: bdbbec9d6aa1eea8af5ae44262ea9eaa
+      size: 2552360207
+  brt_rc_wh:
+    cmd: matlab -batch "addpath(genpath('~/Documents/MATLAB/helperOC')); 
+      addpath(genpath('~/Documents/MATLAB/ToolboxLS')); 
+      run('brt_rc_wh_track.m')"
+    deps:
+    - path: '@RCBicycleCar'
+      hash: md5
+      md5: 377595c6ca45cbea3f083aac25809f90.dir
+      size: 5625
+      nfiles: 4
+    - path: brt_rc_wh_track.m
+      hash: md5
+      md5: 295afc5260cdfc37b39902579cb4940a
+      size: 4189
+    - path: export_3d_brt_with_gradient.m
+      hash: md5
+      md5: 8d16b206d608e7c4d22c7314b00fefd3
+      size: 1708
+    - path: rc_wh_lx_reference.mat
+      hash: md5
+      md5: b0301f517dbab65a8476262adc28dc12
+      size: 151255
+    - path: rc_wh_track_data.mat
+      hash: md5
+      md5: caae69a27532a9245d5c5e7bdf051478
+      size: 41456
+    - path: shapeTrack2D.m
+      hash: md5
+      md5: f1f368754fc8bcd4ab37d75dd4639ad4
+      size: 1789
+    outs:
+    - path: brt_rc_wh_environment.mat
+      hash: md5
+      md5: e3411148d777f882f9c671f126188bf7
+      size: 1136206568
+    - path: brt_rc_wh_track.mat
+      hash: md5
+      md5: e7107bec41ad9fe8b3cf047ff62a1b08
+      size: 754057401
+  run_rc_car_notebook:
+    cmd: NB_HEADLESS=1 uv run jupyter nbconvert --to notebook --execute 
+      --output-dir runs --output rc_car_jax_fixed.ipynb 
+      notebooks/rc_car_jax_fixed.ipynb
+    deps:
+    - path: matlab/brt_rc_wh_track.mat
+      hash: md5
+      md5: e7107bec41ad9fe8b3cf047ff62a1b08
+      size: 754057401
+    - path: notebooks/rc_car_jax_fixed.ipynb
+      hash: md5
+      md5: 3c789d21adb3fc5bbb03892a29620def
+      size: 167509
+    outs:
+    - path: runs/rc_car_jax_fixed.ipynb
+      hash: md5
+      md5: dfd6337b85e2b28b263e88aceb0e4ca0
+      size: 292868
+  run_buzzracer_notebook:
+    cmd: NB_HEADLESS=1 uv run jupyter nbconvert --to notebook --execute 
+      --output-dir runs --output buzzracer_jax.ipynb 
+      notebooks/buzzracer_jax.ipynb
+    deps:
+    - path: matlab/brt_buzzracer_environment.mat
+      hash: md5
+      md5: bdbbec9d6aa1eea8af5ae44262ea9eaa
+      size: 2552360207
+    - path: matlab/buzzracer_dynamics_reference.mat
+      hash: md5
+      md5: 2437548c1c7ea2b736f94bb1bce97531
+      size: 492106
+    - path: matlab/buzzracer_track_data.mat
+      hash: md5
+      md5: cf3434674b605cb91d23a6806cc33d5c
+      size: 231398
+    - path: notebooks/buzzracer_jax.ipynb
+      hash: md5
+      md5: ba950616514d53dc28b694b3ae15f5a1
+      size: 69142
+    outs:
+    - path: runs/buzzracer_jax.ipynb
+      hash: md5
+      md5: 8df8b68c8cc8effa5892245e4f4b0c7c
+      size: 500971
+  run_buzzracer:
+    cmd: uv run python scripts/buzzracer_jax.py --out-dir runs/buzzracer
+    deps:
+    - path: matlab/brt_buzzracer_environment.mat
+      hash: md5
+      md5: bdbbec9d6aa1eea8af5ae44262ea9eaa
+      size: 2552360207
+    - path: matlab/buzzracer_track_data.mat
+      hash: md5
+      md5: cf3434674b605cb91d23a6806cc33d5c
+      size: 231398
+    - path: scripts/_env.py
+      hash: md5
+      md5: 96ad83e1d12194afd02328fe7c852215
+      size: 1789
+    - path: scripts/buzzracer_jax.py
+      hash: md5
+      md5: 5eb54ec2079248368a2f2cf197dba305
+      size: 13710
+    - path: scripts/buzzracer_model.py
+      hash: md5
+      md5: 8cace2359afe9995550167887c872344
+      size: 12976
+    - path: scripts/grids.py
+      hash: md5
+      md5: 18900a4fb5903432cd45964fd1f79b28
+      size: 3145
+    - path: scripts/lap_tracking.py
+      hash: md5
+      md5: d793aec0c7c5916b8d063cc4485c6b3b
+      size: 3293
+    - path: scripts/plotting.py
+      hash: md5
+      md5: efbcc499b812b8f85956de5ac4e2dbc4
+      size: 6165
+    - path: scripts/runner.py
+      hash: md5
+      md5: a3c1ff8e9ee854d2e1a0d10fcfb9d218
+      size: 6705
+    outs:
+    - path: runs/buzzracer/animation.gif
+      hash: md5
+      md5: 7e07ad2c48a2d9a895f2ffca98d65fbe
+      size: 15028985
+    - path: runs/buzzracer/lap_progress.png
+      hash: md5
+      md5: de7ca90bc791492e2e65aa4af37b8b71
+      size: 32061
+    - path: runs/buzzracer/margin.png
+      hash: md5
+      md5: 202337070db4b1229a001dc477509434
+      size: 78373
+    - path: runs/buzzracer/steering.png
+      hash: md5
+      md5: 52eea77c476be061b9537c644352967b
+      size: 114789
+    - path: runs/buzzracer/summary.json
+      hash: md5
+      md5: 72b03105d2382126e060fd36957c9a2b
+      size: 1446
+    - path: runs/buzzracer/throttle.png
+      hash: md5
+      md5: ab2488d187c2295f38855d771cb7f7f1
+      size: 106410
+    - path: runs/buzzracer/trajectory.png
+      hash: md5
+      md5: bc0535b5f31642ebfd5e890ae929d68c
+      size: 196345
+    - path: runs/buzzracer/value.png
+      hash: md5
+      md5: 2619644a1a46cb62f3431deb66a6c24d
+      size: 45194
+    - path: runs/buzzracer/velocity_states.png
+      hash: md5
+      md5: 7b790586390916a2a5b8b86d4cac8fd2
+      size: 101262
+  run_rc_car:
+    cmd: uv run python scripts/rc_car_jax.py --out-dir runs/rc_car
+    deps:
+    - path: ../data/warehouse_track.npz
+      hash: md5
+      md5: a0f1f1a2918e2465125e68f5154a2dbe
+      size: 321416
+    - path: ../warehouse_track.py
+      hash: md5
+      md5: 79065a29691ba49ccc223b945ac88213
+      size: 9329
+    - path: matlab/brt_rc_wh_track.mat
+      hash: md5
+      md5: e7107bec41ad9fe8b3cf047ff62a1b08
+      size: 754057401
+    - path: scripts/_env.py
+      hash: md5
+      md5: 96ad83e1d12194afd02328fe7c852215
+      size: 1789
+    - path: scripts/grids.py
+      hash: md5
+      md5: 18900a4fb5903432cd45964fd1f79b28
+      size: 3145
+    - path: scripts/lap_tracking.py
+      hash: md5
+      md5: d793aec0c7c5916b8d063cc4485c6b3b
+      size: 3293
+    - path: scripts/plotting.py
+      hash: md5
+      md5: efbcc499b812b8f85956de5ac4e2dbc4
+      size: 6165
+    - path: scripts/rc_car_jax.py
+      hash: md5
+      md5: 8f40c874e039d73e57a9468c01c2292c
+      size: 10675
+    - path: scripts/rc_car_model.py
+      hash: md5
+      md5: 3f894b6f7c7f101961b791af63bf4994
+      size: 7809
+    - path: scripts/runner.py
+      hash: md5
+      md5: a3c1ff8e9ee854d2e1a0d10fcfb9d218
+      size: 6705
+    outs:
+    - path: runs/rc_car/animation.gif
+      hash: md5
+      md5: e089e06814e2d56e368563fa9719935e
+      size: 13411087
+    - path: runs/rc_car/lap_progress.png
+      hash: md5
+      md5: a0874b706a03db6cc712757151341ed2
+      size: 34056
+    - path: runs/rc_car/margin.png
+      hash: md5
+      md5: d41414c4e70f6abd942037d4aab83e92
+      size: 55266
+    - path: runs/rc_car/steering_control.png
+      hash: md5
+      md5: af955de49c0453e3c5b830eaa793ba2c
+      size: 82921
+    - path: runs/rc_car/summary.json
+      hash: md5
+      md5: c09cf8be75c6c5b3a1c921e99129cfe9
+      size: 833
+    - path: runs/rc_car/trajectory.png
+      hash: md5
+      md5: de68e5bafbd94fbc62c967c3be89d555
+      size: 130016
+    - path: runs/rc_car/value.png
+      hash: md5
+      md5: ab6f8b80544e142c5d019e8d1107089f
+      size: 54891
+    - path: runs/rc_car/velocity_control.png
+      hash: md5
+      md5: f082ef1e3a0031b9bb31e7222dc20e80
+      size: 85543

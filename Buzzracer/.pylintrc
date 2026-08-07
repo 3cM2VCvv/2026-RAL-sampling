@@ -1,0 +1,13 @@
+    [MESSAGES CONTROL]
+    # W0123: Use of eval
+    # C0115: Missing class docstring
+    # C0116: Missing function docstring
+    # W1201: Use lazy % in logging
+    # C0103: invalid-name
+    # C0209: consider using f string
+    disable=W0123,C0115,C0116,W1201,C0103,C0209
+
+    [MASTER]
+    extension-pkg-whitelist=cv2
+    init-hook='import sys, os; sys.path.append(os.getcwd())'
+    generated-members=cv2

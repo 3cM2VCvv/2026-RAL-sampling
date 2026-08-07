@@ -1,0 +1,53 @@
+{
+  "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+  "description": "Histogram of one run metric over ONE failure mode. `x` selects the metric column, `x_label` its axis title, `title` the heading, and `y_label` carries the failure mode to keep ('crash' or 'stall') - so dvc.yaml binds this template once per (metric, outcome) pair instead of faceting both modes into a single figure.",
+  "title": "<DVC_METRIC_TITLE>",
+  "data": {"values": "<DVC_METRIC_DATA>"},
+  "transform": [
+    {"filter": "datum.outcome == '<DVC_METRIC_Y_LABEL>'"},
+    {"calculate": "toNumber(datum['<DVC_METRIC_X>'])", "as": "metric_num"}
+  ],
+  "facet": {
+    "column": {
+      "field": "rev",
+      "type": "nominal",
+      "title": null,
+      "header": {"labels": false}
+    }
+  },
+  "spec": {
+    "mark": {"type": "bar", "opacity": 0.6},
+    "width": 480,
+    "height": 300,
+    "encoding": {
+      "x": {
+        "field": "metric_num",
+        "type": "quantitative",
+        "bin": {"maxbins": 30},
+        "title": "<DVC_METRIC_X_LABEL>"
+      },
+      "y": {"aggregate": "count", "stack": null, "title": "Number of runs"},
+      "color": {
+        "field": "use_reachsets",
+        "type": "nominal",
+        "title": "Reachable-set filter",
+        "scale": {"domain": ["False", "True"], "range": ["#1f77b4", "#ff7f0e"]},
+        "legend": {"labelExpr": "datum.label == 'True' ? 'Enabled' : 'Disabled'"}
+      },
+      "tooltip": [
+        {"field": "outcome", "type": "nominal", "title": "Failure mode"},
+        {"field": "use_reachsets", "type": "nominal", "title": "Reachable-set filter"},
+        {"aggregate": "count", "title": "Runs"}
+      ]
+    }
+  },
+  "config": {
+    "font": "CMU Serif",
+    "title": {"font": "CMU Serif", "anchor": "middle", "fontSize": 22.5, "fontWeight": "normal"},
+    "axis": {"labelFont": "CMU Serif", "titleFont": "CMU Serif", "titleFontWeight": "normal", "labelFontSize": 16.5, "titleFontSize": 18},
+    "legend": {"labelFont": "CMU Serif", "titleFont": "CMU Serif", "titleFontWeight": "normal", "labelFontSize": 16.5, "titleFontSize": 18, "titleLimit": 400},
+    "header": {"labelFont": "CMU Serif", "titleFont": "CMU Serif", "titleFontWeight": "normal", "labelFontSize": 18, "titleFontSize": 18},
+    "text": {"font": "CMU Serif"},
+    "view": {"stroke": "transparent"}
+  }
+}

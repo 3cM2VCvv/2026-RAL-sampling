@@ -1,0 +1,12 @@
+sphinx
+# sphinx-rtd-theme
+sphinx-book-theme
+# nbsphinx
+myst-nb
+numpydoc
+pygments
+mock
+jax[cpu]
+jaxlib
+jaxtyping
+./

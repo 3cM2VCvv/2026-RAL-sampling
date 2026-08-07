@@ -1,0 +1,100 @@
+{
+  "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+  "description": "One small-multiple per sweep variable. Each panel sizes itself from `width: {step}` - the step is the width of a single offset band, i.e. one bar - so a 3-valued variable gets a proportionally wider panel than a 2-valued one and bars from neighbouring groups never touch. The legend sits below the strip rather than beside it: on a four-panel row the right-hand legend column was the single largest chunk of the figure's width.",
+  "title": "Mean lap time of successful runs by sweep variable",
+  "data": {"values": "<DVC_METRIC_DATA>"},
+  "transform": [
+    {"filter": "datum.outcome == 'race_finished'"},
+    {"calculate": "toNumber(datum.average_lap_time)", "as": "lap_time_num"}
+  ],
+  "resolve": {"scale": {"y": "shared", "color": "shared"}},
+  "hconcat": [
+    {
+      "mark": {"type": "bar"},
+      "width": {"step": 34},
+      "height": 300,
+      "encoding": {
+        "x": {
+          "field": "use_reachsets",
+          "type": "nominal",
+          "title": "Reachable-set filter",
+          "axis": {"labelAngle": 0, "labelExpr": "datum.value == 'True' ? 'Enabled' : 'Disabled'"}
+        },
+        "xOffset": {"field": "use_reachsets", "type": "nominal"},
+        "y": {"field": "lap_time_num", "type": "quantitative", "aggregate": "mean", "title": "Mean lap time (s)", "scale": {"zero": false}},
+        "color": {
+          "field": "use_reachsets",
+          "type": "nominal",
+          "title": "Reachable-set filter",
+          "scale": {"domain": ["False", "True"], "range": ["#1f77b4", "#ff7f0e"]},
+          "legend": {"labelExpr": "datum.label == 'True' ? 'Enabled' : 'Disabled'"}
+        }
+      }
+    },
+    {
+      "mark": {"type": "bar"},
+      "width": {"step": 34},
+      "height": 300,
+      "encoding": {
+        "x": {
+          "field": "state_noise_direction",
+          "type": "nominal",
+          "title": "Disturbance direction",
+          "axis": {"labelAngle": 0, "labelExpr": "datum.value == 'adversarial_away' ? 'Adversarial' : 'Uniform'"}
+        },
+        "xOffset": {"field": "use_reachsets", "type": "nominal"},
+        "y": {"field": "lap_time_num", "type": "quantitative", "aggregate": "mean", "axis": {"grid": true, "labels": false, "ticks": false, "domain": false, "title": null}, "scale": {"zero": false}},
+        "color": {
+          "field": "use_reachsets",
+          "type": "nominal",
+          "title": "Reachable-set filter",
+          "scale": {"domain": ["False", "True"], "range": ["#1f77b4", "#ff7f0e"]},
+          "legend": {"labelExpr": "datum.label == 'True' ? 'Enabled' : 'Disabled'"}
+        }
+      }
+    },
+    {
+      "mark": {"type": "bar"},
+      "width": {"step": 34},
+      "height": 300,
+      "encoding": {
+        "x": {"field": "centering_weight_factor", "type": "nominal", "title": "Centering weight", "axis": {"labelAngle": 0}},
+        "xOffset": {"field": "use_reachsets", "type": "nominal"},
+        "y": {"field": "lap_time_num", "type": "quantitative", "aggregate": "mean", "axis": {"grid": true, "labels": false, "ticks": false, "domain": false, "title": null}, "scale": {"zero": false}},
+        "color": {
+          "field": "use_reachsets",
+          "type": "nominal",
+          "title": "Reachable-set filter",
+          "scale": {"domain": ["False", "True"], "range": ["#1f77b4", "#ff7f0e"]},
+          "legend": {"labelExpr": "datum.label == 'True' ? 'Enabled' : 'Disabled'"}
+        }
+      }
+    },
+    {
+      "mark": {"type": "bar"},
+      "width": {"step": 34},
+      "height": 300,
+      "encoding": {
+        "x": {"field": "velocity_scale_factor", "type": "nominal", "title": "Velocity scale", "axis": {"labelAngle": 0}},
+        "xOffset": {"field": "use_reachsets", "type": "nominal"},
+        "y": {"field": "lap_time_num", "type": "quantitative", "aggregate": "mean", "axis": {"grid": true, "labels": false, "ticks": false, "domain": false, "title": null}, "scale": {"zero": false}},
+        "color": {
+          "field": "use_reachsets",
+          "type": "nominal",
+          "title": "Reachable-set filter",
+          "scale": {"domain": ["False", "True"], "range": ["#1f77b4", "#ff7f0e"]},
+          "legend": {"labelExpr": "datum.label == 'True' ? 'Enabled' : 'Disabled'"}
+        }
+      }
+    }
+  ],
+  "config": {
+    "font": "CMU Serif",
+    "title": {"font": "CMU Serif", "anchor": "middle", "fontSize": 27, "fontWeight": "normal"},
+    "axis": {"labelFont": "CMU Serif", "titleFont": "CMU Serif", "titleFontWeight": "normal", "labelFontSize": 20, "titleFontSize": 22},
+    "legend": {"labelFont": "CMU Serif", "titleFont": "CMU Serif", "titleFontWeight": "normal", "labelFontSize": 20, "titleFontSize": 22, "titleLimit": 400, "orient": "bottom"},
+    "header": {"labelFont": "CMU Serif", "titleFont": "CMU Serif", "titleFontWeight": "normal", "labelFontSize": 22, "titleFontSize": 22},
+    "text": {"font": "CMU Serif"},
+    "view": {"stroke": "transparent"}
+  }
+}

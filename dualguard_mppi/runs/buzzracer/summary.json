@@ -1,0 +1,69 @@
+{
+  "collisions_coarse_lx": 1,
+  "collisions_true_lx": 1,
+  "control_steps": 1727,
+  "corridor_half_width_m": 0.24779999999999996,
+  "crashed": true,
+  "distance_progressed_m": 14.841561425857963,
+  "ess_mean": 10.646273256314581,
+  "guard1_mean_fraction": 0.4067019066268057,
+  "guard2_active_fraction": 0.1239143022582513,
+  "guard2_active_steps": 214,
+  "horizon_steps": 100,
+  "lap_speeds_mps": [
+    0.48918670053106117
+  ],
+  "lap_times_s": [
+    22.76
+  ],
+  "laps_complete": 1,
+  "laps_target": 3,
+  "margin_min_m": -0.022199999541044235,
+  "real_time_budget_met": true,
+  "sim_duration_s": 34.54,
+  "state_envelope": {
+    "omega": [
+      -6.408698081970215,
+      5.9097771644592285,
+      -14.0,
+      14.0
+    ],
+    "psi": [
+      -3.1292922496795654,
+      3.1410763263702393,
+      -3.141592653589793,
+      3.141592653589793
+    ],
+    "v_fwd": [
+      -2.0737202167510986,
+      1.8497499227523804,
+      -0.4,
+      3.2
+    ],
+    "v_side": [
+      -0.17886888980865479,
+      0.22887441515922546,
+      -1.5,
+      1.5
+    ],
+    "x": [
+      0.2078285962343216,
+      2.232808828353882,
+      -0.05,
+      2.45
+    ],
+    "y": [
+      0.1629226803779602,
+      3.4060840606689453,
+      -0.05,
+      3.65
+    ]
+  },
+  "step_ms_mean": 20.2546451980644,
+  "step_ms_median": 7.974863052368164,
+  "steps_inside_brt": 12,
+  "steps_off_grid": 12,
+  "stop_reason": "crash",
+  "track_len_m": 11.133889304086953,
+  "value_min": -1.0
+}
