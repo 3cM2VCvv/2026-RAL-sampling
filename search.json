@@ -1,0 +1,37 @@
+[
+  {
+    "objectID": "index.html",
+    "href": "index.html",
+    "title": "Online, Reachability-Aware, Sampling-Based Motion Planning",
+    "section": "",
+    "text": "This work combines the rigorous safety guarantees of reachable-set analysis with the flexibility of sampling-based Model Predictive Control (MPC) planning. By leveraging modern reachability techniques and computation platforms, we compute guaranteed over-approximations of system trajectories under disturbances at runtime, without the need for any expensive pre-computation. These over-approximations allow the planner to choose sampled control signals that are robust to any disturbance realization, rather than considering only nominal state predictions. In a simulated study of a dynamic bicycle model, our technique reduces safety violations by over 99%. On a real, 1/28th scale model racecar, the vehicle successfully completes dozens of laps without any crashes."
+  },
+  {
+    "objectID": "index.html#overview",
+    "href": "index.html#overview",
+    "title": "Online, Reachability-Aware, Sampling-Based Motion Planning",
+    "section": "",
+    "text": "This work combines the rigorous safety guarantees of reachable-set analysis with the flexibility of sampling-based Model Predictive Control (MPC) planning. By leveraging modern reachability techniques and computation platforms, we compute guaranteed over-approximations of system trajectories under disturbances at runtime, without the need for any expensive pre-computation. These over-approximations allow the planner to choose sampled control signals that are robust to any disturbance realization, rather than considering only nominal state predictions. In a simulated study of a dynamic bicycle model, our technique reduces safety violations by over 99%. On a real, 1/28th scale model racecar, the vehicle successfully completes dozens of laps without any crashes."
+  },
+  {
+    "objectID": "index.html#videos",
+    "href": "index.html#videos",
+    "title": "Online, Reachability-Aware, Sampling-Based Motion Planning",
+    "section": "Videos",
+    "text": "Videos\n\n\nSimulation\n\n\n\nHardware"
+  },
+  {
+    "objectID": "index.html#method-summary",
+    "href": "index.html#method-summary",
+    "title": "Online, Reachability-Aware, Sampling-Based Motion Planning",
+    "section": "Method Summary",
+    "text": "Method Summary\nIn each control loop, our planner\n\nSamples a large number \\(N\\) of control signals with finite duration \\(T\\) around a reference\nIntegrates an embedding system for each signal, giving interval-valued trajectories guaranteed to contain the state of the original system under any (bounded) disturbance signal\nIdentifies the set of sampled controls that are provably safe (i.e. whose interval trajectories do not intersect the unsafe set)\nChooses a minimum-cost sampled control from the safe set\n\nBy leveraging reachable-set analysis, our controller makes a provable, deterministic safety guarantee about signals in its safe set, avoiding stochastic or incentive-driven approaches to choose safe controls. Furthermore, our interval-based reachability is fast enough to perform all calculations fully online while scaling to high-dimensional state spaces."
+  },
+  {
+    "objectID": "index.html#further-details",
+    "href": "index.html#further-details",
+    "title": "Online, Reachability-Aware, Sampling-Based Motion Planning",
+    "section": "Further Details",
+    "text": "Further Details\nPaper: For a deeper discussion of the motivation, method, and results, please see the paper PDF.\nCode: An implementation of our algorithm and exact experimental details are available on github (anonymized)."
+  }
+]

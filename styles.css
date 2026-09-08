@@ -1,0 +1,36 @@
+/* css styles */
+
+.horiz {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+/* Flex items size to their content by default, which collapses a child whose
+   width is a percentage (the video). Force equal, growable columns instead. */
+.horiz > * {
+  flex: 1 1 300px;
+  min-width: 0;
+  text-align: center;
+}
+
+/* Autoplaying, control-free demo videos. Height stays auto so the intrinsic
+   aspect ratio of the file is preserved at any column width. */
+.autoplay-video {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin-bottom: 1em;
+  background-color: #000;
+}
+
+/* Belt and braces: `controls` is never set, but Safari/iOS can still surface
+   its own overlay controls on some elements. */
+.autoplay-video::-webkit-media-controls,
+.autoplay-video::-webkit-media-controls-enclosure,
+.autoplay-video::-webkit-media-controls-start-playback-button {
+  display: none !important;
+  -webkit-appearance: none;
+}
