@@ -1,0 +1,5 @@
+# Quarto render cache and build output. The site is deployed with
+# `quarto publish gh-pages`, which renders and pushes to the gh-pages branch.
+/.quarto/
+/_site/
+**/*.quarto_ipynb

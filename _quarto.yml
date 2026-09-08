@@ -1,0 +1,17 @@
+project:
+  type: website
+  # Raw-HTML <video> tags are invisible to Quarto's resource discovery, so the
+  # media directory has to be declared explicitly or it won't reach _site/.
+  resources:
+    - videos/
+
+website:
+  title: "2026 RA-L Sampling Planner"
+
+format:
+  html:
+    theme:
+      - cosmo
+      - brand
+    css: styles.css
+    toc: true

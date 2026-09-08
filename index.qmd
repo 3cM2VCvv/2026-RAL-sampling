@@ -1,0 +1,54 @@
+---
+title: "Online, Reachability-Aware, Sampling-Based Motion Planning"
+author: Anonymous Authors
+---
+
+## Overview
+
+This work combines the rigorous safety guarantees of **reachable-set analysis** with the flexibility of **sampling-based Model Predictive Control** (MPC) planning. 
+By leveraging modern reachability techniques and computation platforms, we compute guaranteed over-approximations of system trajectories under disturbances at runtime, without the need for any expensive pre-computation. 
+These over-approximations allow the planner to choose sampled control signals that are **robust to any disturbance realization**, rather than considering only nominal state predictions.
+In a simulated study of a dynamic bicycle model, our technique reduces safety violations by over 99%. 
+On a real, 1/28th scale model racecar, the vehicle successfully completes **dozens of laps without any crashes**. 
+
+## Videos
+
+::: {.horiz}
+
+::: {}
+Simulation
+
+```{=html}
+<video class="autoplay-video" src="videos/sim.mp4" autoplay loop muted playsinline disablepictureinpicture></video>
+```
+:::
+
+::: {}
+Hardware
+
+```{=html}
+<video class="autoplay-video" src="videos/hardware.mp4" autoplay loop muted playsinline disablepictureinpicture></video>
+```
+:::
+
+:::
+
+## Method Summary
+
+In each control loop, our planner 
+
+1. Samples a large number $N$ of control signals with finite duration $T$ around a reference
+2. Integrates an **embedding system** for each signal, giving interval-valued trajectories guaranteed to contain the state of the original system under any (bounded) disturbance signal 
+3. Identifies the set of sampled controls that are **provably safe** (i.e. whose interval trajectories do not intersect the unsafe set)
+4. Chooses a minimum-cost sampled control from the safe set
+
+By leveraging reachable-set analysis, our controller makes a **provable, deterministic safety guarantee** about signals in its safe set, avoiding stochastic or incentive-driven approaches to choose safe controls. 
+Furthermore, our interval-based reachability is fast enough to perform all calculations **fully online** while **scaling to high-dimensional state spaces**. 
+
+## Further Details
+
+**Paper**: For a deeper discussion of the motivation, method, and results, please see the [paper PDF](manuscript.pdf).
+
+**Code**: An implementation of our algorithm and exact experimental details are available [on github](https://github.com/3cM2VCvv/2026-RAL-sampling) (anonymized).
+
+
