@@ -7,6 +7,12 @@ project:
 
 website:
   title: "2026 RA-L Sampling Planner"
+  navbar:
+    left:
+      - text: "Overview"
+        href: index.qmd
+      - text: "Experimental Parameter Values"
+        href: experimental-parameter-values.qmd
 
 format:
   html:

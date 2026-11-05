@@ -1,0 +1,18 @@
+---
+title: "Experimental Parameter Values"
+toc: false
+---
+
+- **Disturbance bounds:** $\left[\underline{w}_{v_\mathrm{lat}}, \overline{w}_{v_\mathrm{lat}}\right] = [-0.01,\ 0.01]$, $\left[\underline{w}_{\phi}, \overline{w}_{\phi}\right] = [-0.02,\ 0.02]$
+
+- **Control sampling parameters:**
+
+    a. **Steering parameters:** (Difference sampling) $\Delta u_{\mathrm{std}} = \frac{3}{4}\pi$, $\left[\underline{\Delta u}_{\mathrm{bnd}}, \overline{\Delta u}_{\mathrm{bnd}}\right] = \left[-\frac{3}{2}\pi,\ \frac{3}{2}\pi\right]$, (Action sampling) $\left[\underline{u}_{\mathrm{bnd}}, \overline{u}_{\mathrm{bnd}}\right] = [-0.4555,\ 0.4555]$
+    b. **Throttle parameters:** (Difference sampling) $\Delta u_{\mathrm{std}} = 1$, $\left[\underline{\Delta u}_{\mathrm{bnd}}, \overline{\Delta u}_{\mathrm{bnd}}\right] = [-8,\ 2]$, (Action sampling) $\left[\underline{u}_{\mathrm{bnd}}, \overline{u}_{\mathrm{bnd}}\right] = [-1,\ 1]$
+
+- **Kinematic switching speed:** $\hat{v}_{\mathrm{long}} = 0.1$
+
+- **Vehicle parameters:** $\ell_f = 0.04824$, $\ell_r = 0.04176$, $m = 0.1667$, $I_z = 0.00045$
+
+    a. **Pacejka slip coefficients:** $B = 2.3$, $C = 1.6$, $D = 1.1$
+    b. **Motor acceleration model:** $C_a = 6.17$, $C_v = 15.2$, $C_e = 0.333$
