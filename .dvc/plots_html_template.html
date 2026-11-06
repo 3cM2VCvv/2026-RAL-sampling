@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html>
+<head>
+    {refresh_tag}
+    <title>DVC Plot</title>
+    {scripts}
+    <script>
+        // dvc_render emits one `vegaEmbed('#id', spec)` call per Vega plot and
+        // throws the returned promise away, so wrap vegaEmbed before the plot
+        // scripts in <body> run and keep a handle on every view. That is what
+        // lets "Download all as SVG" re-serialize each chart on demand.
+        window.__dvcPlots = [];
+        (function () {
+            var embed = window.vegaEmbed;
+            if (typeof embed !== "function") return;
+            window.vegaEmbed = function (el, spec) {
+                var promise = embed.apply(this, arguments);
+                window.__dvcPlots.push({
+                    name: typeof el === "string" ? el.replace(/^#/, "") : (el && el.id) || "plot",
+                    promise: promise
+                });
+                return promise;
+            };
+        })();
+    </script>
+    <style>
+        table {
+            border-spacing: 15px;
+        }
+        #download-all-svg {
+            position: fixed;
+            top: 12px;
+            right: 12px;
+            z-index: 1000;
+            padding: 8px 14px;
+            font: 14px/1.2 system-ui, sans-serif;
+            color: #fff;
+            background: #945dd6;
+            border: none;
+            border-radius: 4px;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+            cursor: pointer;
+        }
+        #download-all-svg:disabled {
+            background: #8a8a8a;
+            cursor: progress;
+        }
+    </style>
+</head>
+<body>
+    <button id="download-all-svg" type="button">Download all as SVG</button>
+    <script>
+        (function () {
+            var button = document.getElementById("download-all-svg");
+
+            function triggerDownload(href, filename, newTab) {
+                var a = document.createElement("a");
+                a.href = href;
+                a.download = filename;
+                if (newTab) {
+                    // Only used for hrefs the browser may refuse to save (see
+                    // below). `download` wins where it is honoured; where it is
+                    // not, this opens a tab instead of navigating the report away.
+                    a.target = "_blank";
+                    a.rel = "noopener";
+                }
+                a.style.display = "none";
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+            }
+
+            function saveSvg(svg, filename) {
+                var url = URL.createObjectURL(new Blob([svg], { type: "image/svg+xml;charset=utf-8" }));
+                triggerDownload(url, filename);
+                setTimeout(function () { URL.revokeObjectURL(url); }, 10000);
+            }
+
+            // Image plots (crash_locations.svg and friends) are already .svg
+            // files sitting next to this page, one <img> per revision.
+            function collectImages() {
+                return Array.prototype.map.call(
+                    document.querySelectorAll("div[id] img[src$='.svg']"),
+                    function (img) {
+                        var container = img.closest("div[id]");
+                        var siblings = container.querySelectorAll("img[src$='.svg']");
+                        var index = Array.prototype.indexOf.call(siblings, img);
+                        return {
+                            name: container.id + (siblings.length > 1 ? "_" + index : ""),
+                            src: img.getAttribute("src")
+                        };
+                    }
+                );
+            }
+
+            function sleep(ms) {
+                return new Promise(function (resolve) { setTimeout(resolve, ms); });
+            }
+
+            button.addEventListener("click", async function () {
+                var plots = window.__dvcPlots.slice();
+                var images = collectImages();
+                var total = plots.length + images.length;
+                if (!total) {
+                    button.textContent = "Nothing to download";
+                    return;
+                }
+
+                // Hand the on-disk .svg files straight to the browser, before
+                // the first await, so the click gesture is still live: a
+                // file:// page can neither fetch() its own siblings nor
+                // reliably honour `download`, and a popup opened later would
+                // be blocked. Served over http(s) these just download.
+                images.forEach(function (image) {
+                    triggerDownload(image.src, image.name + ".svg", true);
+                });
+
+                button.disabled = true;
+                var failures = [];
+                for (var i = 0; i < plots.length; i++) {
+                    button.textContent = "Downloading " + (images.length + i + 1) + "/" + total + "…";
+                    try {
+                        var result = await plots[i].promise;
+                        saveSvg(await result.view.toSVG(), plots[i].name + ".svg");
+                    } catch (error) {
+                        console.error("Could not export " + plots[i].name, error);
+                        failures.push(plots[i].name);
+                    }
+                    // Browsers throttle rapid-fire downloads; space them out.
+                    await sleep(150);
+                }
+
+                button.textContent = failures.length
+                    ? "Failed: " + failures.length + " of " + total
+                    : "Downloaded " + total + " SVGs";
+                button.disabled = false;
+                await sleep(4000);
+                button.textContent = "Download all as SVG";
+            });
+        })();
+    </script>
+    {plot_divs}
+</body>
+</html>

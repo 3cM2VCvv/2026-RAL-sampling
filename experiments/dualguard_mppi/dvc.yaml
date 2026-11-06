@@ -1,0 +1,120 @@
+# DualGuard-MPPI pipeline. Independent of the root dvc.yaml, so `dvc repro` at
+# the repo root does not reach it:
+#
+#     uv run dvc repro experiments/dualguard_mppi/dvc.yaml
+#
+# The two brt_* stages are multi-day MATLAB solves whose outputs predate this
+# pipeline. They were seeded into dvc.lock with `dvc commit` rather than run,
+# so they read as up to date; changing any of their deps will schedule a
+# re-solve. Check `dvc status` before `dvc repro`.
+
+stages:
+  raceline_to_mat:
+    wdir: ../..
+    cmd: uv run python -m experiments.dualguard_mppi.utils.raceline_to_mat
+    deps:
+    - experiments/dualguard_mppi/utils/raceline_to_mat.py
+    - vendor/Buzzracer/buzzracer/data/raceline.p
+    outs:
+    - outputs/dualguard_mppi/matlab/buzzracer_track_data.mat
+
+  # MATLAB stages run from the artifact directory (the scripts load/save bare
+  # filenames against the cwd) and add the source directory to the path.
+  brt_buzzracer:
+    wdir: ../../outputs/dualguard_mppi/matlab
+    cmd: >-
+      matlab -batch "addpath(genpath('~/Documents/MATLAB/helperOC'));
+      addpath(genpath('~/Documents/MATLAB/ToolboxLS'));
+      addpath(genpath('../../../experiments/dualguard_mppi/matlab'));
+      run('../../../experiments/dualguard_mppi/matlab/brt_buzzracer_track.m')"
+    deps:
+    - ../../../experiments/dualguard_mppi/matlab/brt_buzzracer_track.m
+    - ../../../experiments/dualguard_mppi/matlab/shapeRCPTrack2D.m
+    - ../../../experiments/dualguard_mppi/matlab/createGridND.m
+    - ../../../experiments/dualguard_mppi/matlab/export_brt_with_gradient.m
+    - ../../../experiments/dualguard_mppi/matlab/@BuzzracerDynamicBicycle
+    - buzzracer_track_data.mat
+    outs:
+    - brt_buzzracer_environment.mat
+
+  brt_rc_wh:
+    wdir: ../../outputs/dualguard_mppi/matlab
+    cmd: >-
+      matlab -batch "addpath(genpath('~/Documents/MATLAB/helperOC'));
+      addpath(genpath('~/Documents/MATLAB/ToolboxLS'));
+      addpath(genpath('../../../experiments/dualguard_mppi/matlab'));
+      run('../../../experiments/dualguard_mppi/matlab/brt_rc_wh_track.m')"
+    deps:
+    - ../../../experiments/dualguard_mppi/matlab/brt_rc_wh_track.m
+    - ../../../experiments/dualguard_mppi/matlab/shapeTrack2D.m
+    - ../../../experiments/dualguard_mppi/matlab/export_3d_brt_with_gradient.m
+    - ../../../experiments/dualguard_mppi/matlab/@RCBicycleCar
+    - rc_wh_track_data.mat
+    - rc_wh_lx_reference.mat
+    outs:
+    - brt_rc_wh_track.mat
+    - brt_rc_wh_environment.mat
+
+  # The two experiments. Each runs until the car crashes or completes --laps laps,
+  # and writes one file per plot: `plots` entries are dvc-cached images, summary.json
+  # is an uncached metric so the run's numbers stay in git.
+  #
+  # run_rc_car takes its racing line from the root pipeline's reconstruct_track
+  # output, the same rc_wh geometry experiments/dualguard_rc/dualguard_rc_trial.py
+  # drives. That is the one dependency crossing out of this directory; `dvc repro`
+  # at the repo root still does not reach these stages.
+  run_rc_car:
+    wdir: ../..
+    cmd: uv run python -m experiments.dualguard_mppi.scripts.rc_car_jax --out-dir outputs/dualguard_mppi/runs/rc_car
+    deps:
+    - experiments/dualguard_mppi/scripts/rc_car_jax.py
+    - experiments/dualguard_mppi/scripts/rc_car_model.py
+    - experiments/dualguard_mppi/scripts/_dg_env.py
+    - experiments/dualguard_mppi/scripts/grids.py
+    - experiments/dualguard_mppi/scripts/lap_tracking.py
+    - experiments/shared/frenet.py
+    - experiments/dualguard_mppi/scripts/plotting.py
+    - experiments/dualguard_mppi/scripts/runner.py
+    - outputs/dualguard_mppi/matlab/brt_rc_wh_track.mat
+    - experiments/shared/warehouse_track.py
+    - outputs/dualguard_rc/warehouse_track.npz
+    outs:
+    - outputs/dualguard_mppi/runs/rc_car/animation.gif
+    metrics:
+    - outputs/dualguard_mppi/runs/rc_car/summary.json:
+        cache: false
+    plots:
+    - outputs/dualguard_mppi/runs/rc_car/trajectory.png
+    - outputs/dualguard_mppi/runs/rc_car/velocity_control.png
+    - outputs/dualguard_mppi/runs/rc_car/steering_control.png
+    - outputs/dualguard_mppi/runs/rc_car/margin.png
+    - outputs/dualguard_mppi/runs/rc_car/value.png
+    - outputs/dualguard_mppi/runs/rc_car/lap_progress.png
+
+  run_buzzracer:
+    wdir: ../..
+    cmd: uv run python -m experiments.dualguard_mppi.scripts.buzzracer_jax --out-dir outputs/dualguard_mppi/runs/buzzracer
+    deps:
+    - experiments/dualguard_mppi/scripts/buzzracer_jax.py
+    - experiments/dualguard_mppi/scripts/buzzracer_model.py
+    - experiments/dualguard_mppi/scripts/_dg_env.py
+    - experiments/dualguard_mppi/scripts/grids.py
+    - experiments/dualguard_mppi/scripts/lap_tracking.py
+    - experiments/shared/frenet.py
+    - experiments/dualguard_mppi/scripts/plotting.py
+    - experiments/dualguard_mppi/scripts/runner.py
+    - outputs/dualguard_mppi/matlab/brt_buzzracer_environment.mat
+    - outputs/dualguard_mppi/matlab/buzzracer_track_data.mat
+    outs:
+    - outputs/dualguard_mppi/runs/buzzracer/animation.gif
+    metrics:
+    - outputs/dualguard_mppi/runs/buzzracer/summary.json:
+        cache: false
+    plots:
+    - outputs/dualguard_mppi/runs/buzzracer/trajectory.png
+    - outputs/dualguard_mppi/runs/buzzracer/steering.png
+    - outputs/dualguard_mppi/runs/buzzracer/throttle.png
+    - outputs/dualguard_mppi/runs/buzzracer/velocity_states.png
+    - outputs/dualguard_mppi/runs/buzzracer/margin.png
+    - outputs/dualguard_mppi/runs/buzzracer/value.png
+    - outputs/dualguard_mppi/runs/buzzracer/lap_progress.png

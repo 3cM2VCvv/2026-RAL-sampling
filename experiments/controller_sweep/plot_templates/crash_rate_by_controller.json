@@ -1,0 +1,48 @@
+{
+  "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+  "description": "Overall crash rate per controller, aggregated over every track and disturbance in the sweep. Controllers are sorted so the safest (lowest rate) is leftmost.",
+  "title": "<DVC_METRIC_TITLE>",
+  "width": 340,
+  "height": 300,
+  "data": {"values": "<DVC_METRIC_DATA>"},
+  "transform": [{"calculate": "datum.outcome == 'crash' ? 1 : 0", "as": "crash"}],
+  "mark": {"type": "bar"},
+  "encoding": {
+    "x": {
+      "field": "<DVC_METRIC_X>",
+      "type": "nominal",
+      "title": "<DVC_METRIC_X_LABEL>",
+      "sort": {"field": "crash", "op": "mean", "order": "ascending"},
+      "axis": {"labelAngle": 0, "labelExpr": "datum.value == 'shieldmppi' ? 'Shield-MPPI' : datum.value == 'tubemppi' ? 'Tube-MPPI' : 'Immrax'"}
+    },
+    "y": {
+      "aggregate": "mean",
+      "field": "crash",
+      "type": "quantitative",
+      "title": "Crash rate",
+      "axis": {"format": ".0%"},
+      "scale": {"domain": [0, 1]}
+    },
+    "color": {
+      "field": "controller",
+      "type": "nominal",
+      "title": "Controller",
+      "scale": {"domain": ["immrax", "shieldmppi", "tubemppi"], "range": ["#1f77b4", "#ff7f0e", "#9467bd"]},
+      "legend": null
+    },
+    "tooltip": [
+      {"field": "controller", "type": "nominal", "title": "Controller"},
+      {"aggregate": "mean", "field": "crash", "type": "quantitative", "title": "Crash rate", "format": ".0%"},
+      {"aggregate": "count", "type": "quantitative", "title": "Trials"}
+    ]
+  },
+  "config": {
+    "font": "CMU Serif",
+    "title": {"font": "CMU Serif", "anchor": "middle", "fontSize": 22.5, "fontWeight": "normal"},
+    "axis": {"labelFont": "CMU Serif", "titleFont": "CMU Serif", "titleFontWeight": "normal", "labelFontSize": 16.5, "titleFontSize": 18},
+    "legend": {"labelFont": "CMU Serif", "titleFont": "CMU Serif", "titleFontWeight": "normal", "labelFontSize": 16.5, "titleFontSize": 18, "titleLimit": 400},
+    "header": {"labelFont": "CMU Serif", "titleFont": "CMU Serif", "titleFontWeight": "normal", "labelFontSize": 18, "titleFontSize": 18},
+    "text": {"font": "CMU Serif"},
+    "view": {"stroke": "transparent"}
+  }
+}

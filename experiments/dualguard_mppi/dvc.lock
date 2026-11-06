@@ -1,0 +1,248 @@
+schema: '2.0'
+stages:
+  raceline_to_mat:
+    cmd: uv run python -m experiments.dualguard_mppi.utils.raceline_to_mat
+    deps:
+    - path: vendor/Buzzracer/buzzracer/data/raceline.p
+      hash: md5
+      md5: b5fbb874e0e0db8239951935e61a0dfd
+      size: 43957
+    - path: experiments/dualguard_mppi/utils/raceline_to_mat.py
+      hash: md5
+      md5: 555acfce95dcf103460105c49575409d
+      size: 11953
+    outs:
+    - path: outputs/dualguard_mppi/matlab/buzzracer_track_data.mat
+      hash: md5
+      md5: cf3434674b605cb91d23a6806cc33d5c
+      size: 231398
+  brt_buzzracer:
+    cmd: matlab -batch "addpath(genpath('~/Documents/MATLAB/helperOC')); addpath(genpath('~/Documents/MATLAB/ToolboxLS')); addpath(genpath('../../../experiments/dualguard_mppi/matlab')); run('../../../experiments/dualguard_mppi/matlab/brt_buzzracer_track.m')"
+    deps:
+    - path: ../../../experiments/dualguard_mppi/matlab/@BuzzracerDynamicBicycle
+      hash: md5
+      md5: c9672e23289098f8c243a66e29259946.dir
+      size: 18836
+      nfiles: 5
+    - path: ../../../experiments/dualguard_mppi/matlab/brt_buzzracer_track.m
+      hash: md5
+      md5: 418f0448db1ee03f8c5043d8ee155bbb
+      size: 5942
+    - path: buzzracer_track_data.mat
+      hash: md5
+      md5: cf3434674b605cb91d23a6806cc33d5c
+      size: 231398
+    - path: ../../../experiments/dualguard_mppi/matlab/createGridND.m
+      hash: md5
+      md5: 8382ad35d162c1ba01ce196c09806ff7
+      size: 1874
+    - path: ../../../experiments/dualguard_mppi/matlab/export_brt_with_gradient.m
+      hash: md5
+      md5: 8b380f8a4cc67ff3c0c4ab0b0bea5fb3
+      size: 6626
+    - path: ../../../experiments/dualguard_mppi/matlab/shapeRCPTrack2D.m
+      hash: md5
+      md5: feda73568ca933452badbe099360baf9
+      size: 4143
+    outs:
+    - path: brt_buzzracer_environment.mat
+      hash: md5
+      md5: bdbbec9d6aa1eea8af5ae44262ea9eaa
+      size: 2552360207
+  brt_rc_wh:
+    cmd: matlab -batch "addpath(genpath('~/Documents/MATLAB/helperOC')); addpath(genpath('~/Documents/MATLAB/ToolboxLS')); addpath(genpath('../../../experiments/dualguard_mppi/matlab')); run('../../../experiments/dualguard_mppi/matlab/brt_rc_wh_track.m')"
+    deps:
+    - path: ../../../experiments/dualguard_mppi/matlab/@RCBicycleCar
+      hash: md5
+      md5: 377595c6ca45cbea3f083aac25809f90.dir
+      size: 5625
+      nfiles: 4
+    - path: ../../../experiments/dualguard_mppi/matlab/brt_rc_wh_track.m
+      hash: md5
+      md5: 295afc5260cdfc37b39902579cb4940a
+      size: 4189
+    - path: ../../../experiments/dualguard_mppi/matlab/export_3d_brt_with_gradient.m
+      hash: md5
+      md5: 8d16b206d608e7c4d22c7314b00fefd3
+      size: 1708
+    - path: rc_wh_lx_reference.mat
+      hash: md5
+      md5: b0301f517dbab65a8476262adc28dc12
+      size: 151255
+    - path: rc_wh_track_data.mat
+      hash: md5
+      md5: caae69a27532a9245d5c5e7bdf051478
+      size: 41456
+    - path: ../../../experiments/dualguard_mppi/matlab/shapeTrack2D.m
+      hash: md5
+      md5: f1f368754fc8bcd4ab37d75dd4639ad4
+      size: 1789
+    outs:
+    - path: brt_rc_wh_environment.mat
+      hash: md5
+      md5: e3411148d777f882f9c671f126188bf7
+      size: 1136206568
+    - path: brt_rc_wh_track.mat
+      hash: md5
+      md5: e7107bec41ad9fe8b3cf047ff62a1b08
+      size: 754057401
+  run_buzzracer:
+    cmd: uv run python -m experiments.dualguard_mppi.scripts.buzzracer_jax --out-dir outputs/dualguard_mppi/runs/buzzracer
+    deps:
+    - path: outputs/dualguard_mppi/matlab/brt_buzzracer_environment.mat
+      hash: md5
+      md5: bdbbec9d6aa1eea8af5ae44262ea9eaa
+      size: 2552360207
+    - path: outputs/dualguard_mppi/matlab/buzzracer_track_data.mat
+      hash: md5
+      md5: cf3434674b605cb91d23a6806cc33d5c
+      size: 231398
+    - path: experiments/dualguard_mppi/scripts/_dg_env.py
+      hash: md5
+      md5: 6c9d041074d65873fa77d3866d4b6519
+      size: 1267
+    - path: experiments/dualguard_mppi/scripts/buzzracer_jax.py
+      hash: md5
+      md5: 4302815828fb3b443833d62c286a8487
+      size: 13728
+    - path: experiments/dualguard_mppi/scripts/buzzracer_model.py
+      hash: md5
+      md5: aee6c97ab2f54282cad20ed78f87e476
+      size: 12977
+    - path: experiments/dualguard_mppi/scripts/grids.py
+      hash: md5
+      md5: 18900a4fb5903432cd45964fd1f79b28
+      size: 3145
+    - path: experiments/dualguard_mppi/scripts/lap_tracking.py
+      hash: md5
+      md5: e8a87bf932517027cd789856f5e377fd
+      size: 256
+    - path: experiments/dualguard_mppi/scripts/plotting.py
+      hash: md5
+      md5: efbcc499b812b8f85956de5ac4e2dbc4
+      size: 6165
+    - path: experiments/dualguard_mppi/scripts/runner.py
+      hash: md5
+      md5: a3c1ff8e9ee854d2e1a0d10fcfb9d218
+      size: 6705
+    - path: experiments/shared/frenet.py
+      hash: md5
+      md5: 464cb5c11eabf928acfd7b9240e9b209
+      size: 2848
+    outs:
+    - path: outputs/dualguard_mppi/runs/buzzracer/animation.gif
+      hash: md5
+      md5: 7e07ad2c48a2d9a895f2ffca98d65fbe
+      size: 15028985
+    - path: outputs/dualguard_mppi/runs/buzzracer/lap_progress.png
+      hash: md5
+      md5: de7ca90bc791492e2e65aa4af37b8b71
+      size: 32061
+    - path: outputs/dualguard_mppi/runs/buzzracer/margin.png
+      hash: md5
+      md5: 202337070db4b1229a001dc477509434
+      size: 78373
+    - path: outputs/dualguard_mppi/runs/buzzracer/steering.png
+      hash: md5
+      md5: 52eea77c476be061b9537c644352967b
+      size: 114789
+    - path: outputs/dualguard_mppi/runs/buzzracer/summary.json
+      hash: md5
+      md5: 72b03105d2382126e060fd36957c9a2b
+      size: 1446
+    - path: outputs/dualguard_mppi/runs/buzzracer/throttle.png
+      hash: md5
+      md5: ab2488d187c2295f38855d771cb7f7f1
+      size: 106410
+    - path: outputs/dualguard_mppi/runs/buzzracer/trajectory.png
+      hash: md5
+      md5: bc0535b5f31642ebfd5e890ae929d68c
+      size: 196345
+    - path: outputs/dualguard_mppi/runs/buzzracer/value.png
+      hash: md5
+      md5: 2619644a1a46cb62f3431deb66a6c24d
+      size: 45194
+    - path: outputs/dualguard_mppi/runs/buzzracer/velocity_states.png
+      hash: md5
+      md5: 7b790586390916a2a5b8b86d4cac8fd2
+      size: 101262
+  run_rc_car:
+    cmd: uv run python -m experiments.dualguard_mppi.scripts.rc_car_jax --out-dir outputs/dualguard_mppi/runs/rc_car
+    deps:
+    - path: outputs/dualguard_rc/warehouse_track.npz
+      hash: md5
+      md5: a0f1f1a2918e2465125e68f5154a2dbe
+      size: 321416
+    - path: experiments/shared/warehouse_track.py
+      hash: md5
+      md5: 8f4caf607c2702da486f6bb33c9ce383
+      size: 9495
+    - path: outputs/dualguard_mppi/matlab/brt_rc_wh_track.mat
+      hash: md5
+      md5: e7107bec41ad9fe8b3cf047ff62a1b08
+      size: 754057401
+    - path: experiments/dualguard_mppi/scripts/_dg_env.py
+      hash: md5
+      md5: 6c9d041074d65873fa77d3866d4b6519
+      size: 1267
+    - path: experiments/dualguard_mppi/scripts/grids.py
+      hash: md5
+      md5: 18900a4fb5903432cd45964fd1f79b28
+      size: 3145
+    - path: experiments/dualguard_mppi/scripts/lap_tracking.py
+      hash: md5
+      md5: e8a87bf932517027cd789856f5e377fd
+      size: 256
+    - path: experiments/dualguard_mppi/scripts/plotting.py
+      hash: md5
+      md5: efbcc499b812b8f85956de5ac4e2dbc4
+      size: 6165
+    - path: experiments/dualguard_mppi/scripts/rc_car_jax.py
+      hash: md5
+      md5: 4a759c2a210e6ec1d53a416b11dc8c1d
+      size: 10689
+    - path: experiments/dualguard_mppi/scripts/rc_car_model.py
+      hash: md5
+      md5: 110f36beac12f12b2994d6e9c55f27a0
+      size: 7810
+    - path: experiments/dualguard_mppi/scripts/runner.py
+      hash: md5
+      md5: a3c1ff8e9ee854d2e1a0d10fcfb9d218
+      size: 6705
+    - path: experiments/shared/frenet.py
+      hash: md5
+      md5: 464cb5c11eabf928acfd7b9240e9b209
+      size: 2848
+    outs:
+    - path: outputs/dualguard_mppi/runs/rc_car/animation.gif
+      hash: md5
+      md5: e089e06814e2d56e368563fa9719935e
+      size: 13411087
+    - path: outputs/dualguard_mppi/runs/rc_car/lap_progress.png
+      hash: md5
+      md5: a0874b706a03db6cc712757151341ed2
+      size: 34056
+    - path: outputs/dualguard_mppi/runs/rc_car/margin.png
+      hash: md5
+      md5: d41414c4e70f6abd942037d4aab83e92
+      size: 55266
+    - path: outputs/dualguard_mppi/runs/rc_car/steering_control.png
+      hash: md5
+      md5: af955de49c0453e3c5b830eaa793ba2c
+      size: 82921
+    - path: outputs/dualguard_mppi/runs/rc_car/summary.json
+      hash: md5
+      md5: c09cf8be75c6c5b3a1c921e99129cfe9
+      size: 833
+    - path: outputs/dualguard_mppi/runs/rc_car/trajectory.png
+      hash: md5
+      md5: de68e5bafbd94fbc62c967c3be89d555
+      size: 130016
+    - path: outputs/dualguard_mppi/runs/rc_car/value.png
+      hash: md5
+      md5: ab6f8b80544e142c5d019e8d1107089f
+      size: 54891
+    - path: outputs/dualguard_mppi/runs/rc_car/velocity_control.png
+      hash: md5
+      md5: f082ef1e3a0031b9bb31e7222dc20e80
+      size: 85543

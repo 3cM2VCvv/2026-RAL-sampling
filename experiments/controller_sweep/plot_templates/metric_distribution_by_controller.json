@@ -1,0 +1,65 @@
+{
+  "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+  "description": "Distribution of one per-trial metric across controllers: a box plot (min/max whiskers) with the individual trials overlaid. DVC binds the metric column to the template's y field. Rows whose metric is zero or missing are dropped, which keeps runs that completed no lap out of a lap-time plot while leaving control-time data untouched.",
+  "title": "<DVC_METRIC_TITLE>",
+  "width": 360,
+  "height": 300,
+  "data": {"values": "<DVC_METRIC_DATA>"},
+  "transform": [
+    {"calculate": "toNumber(datum['<DVC_METRIC_Y>'])", "as": "value"},
+    {"filter": "datum.value > 0"}
+  ],
+  "layer": [
+    {
+      "mark": {"type": "boxplot", "extent": "min-max", "size": 44, "opacity": 0.35},
+      "encoding": {
+        "x": {
+          "field": "controller",
+          "type": "nominal",
+          "title": "<DVC_METRIC_X_LABEL>",
+          "axis": {"labelAngle": 0, "labelExpr": "datum.value == 'shieldmppi' ? 'Shield-MPPI' : datum.value == 'tubemppi' ? 'Tube-MPPI' : 'Immrax'"}
+        },
+        "y": {
+          "field": "value",
+          "type": "quantitative",
+          "title": "<DVC_METRIC_Y_LABEL>",
+          "scale": {"zero": false}
+        },
+        "color": {
+          "field": "controller",
+          "type": "nominal",
+          "scale": {"domain": ["immrax", "shieldmppi", "tubemppi"], "range": ["#1f77b4", "#ff7f0e", "#9467bd"]},
+          "legend": null
+        }
+      }
+    },
+    {
+      "mark": {"type": "point", "filled": true, "size": 70, "opacity": 0.9},
+      "encoding": {
+        "x": {"field": "controller", "type": "nominal", "title": "<DVC_METRIC_X_LABEL>"},
+        "y": {"field": "value", "type": "quantitative", "title": "<DVC_METRIC_Y_LABEL>"},
+        "color": {
+          "field": "controller",
+          "type": "nominal",
+          "scale": {"domain": ["immrax", "shieldmppi", "tubemppi"], "range": ["#1f77b4", "#ff7f0e", "#9467bd"]},
+          "legend": null
+        },
+        "tooltip": [
+          {"field": "run_id", "type": "nominal", "title": "Run"},
+          {"field": "track", "type": "nominal", "title": "Track"},
+          {"field": "state_noise_direction", "type": "nominal", "title": "Disturbance"},
+          {"field": "value", "type": "quantitative", "title": "<DVC_METRIC_Y_LABEL>", "format": ".1f"}
+        ]
+      }
+    }
+  ],
+  "config": {
+    "font": "CMU Serif",
+    "title": {"font": "CMU Serif", "anchor": "middle", "fontSize": 22.5, "fontWeight": "normal"},
+    "axis": {"labelFont": "CMU Serif", "titleFont": "CMU Serif", "titleFontWeight": "normal", "labelFontSize": 16.5, "titleFontSize": 18},
+    "legend": {"labelFont": "CMU Serif", "titleFont": "CMU Serif", "titleFontWeight": "normal", "labelFontSize": 16.5, "titleFontSize": 18, "titleLimit": 400},
+    "header": {"labelFont": "CMU Serif", "titleFont": "CMU Serif", "titleFontWeight": "normal", "labelFontSize": 18, "titleFontSize": 18},
+    "text": {"font": "CMU Serif"},
+    "view": {"stroke": "transparent"}
+  }
+}

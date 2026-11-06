@@ -1,0 +1,64 @@
+{
+  "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+  "description": "Stacked outcome counts per track, one panel per controller. Complements the crash-rate plot by also showing stalls and unfinished runs, i.e. the full reason a track is hard. Tracks are ordered by their overall crash rate, matching the crash-rate plot.",
+  "title": "<DVC_METRIC_TITLE>",
+  "data": {"values": "<DVC_METRIC_DATA>"},
+  "facet": {
+    "column": {
+      "field": "controller",
+      "type": "nominal",
+      "sort": ["immrax", "shieldmppi", "tubemppi"],
+      "title": null,
+      "header": {"title": "Controller", "labelExpr": "datum.value == 'shieldmppi' ? 'Shield-MPPI' : datum.value == 'tubemppi' ? 'Tube-MPPI' : 'Immrax'"}
+    }
+  },
+  "spec": {
+    "transform": [{"calculate": "datum.outcome == 'crash' ? 1 : 0", "as": "crash"}],
+    "mark": {"type": "bar"},
+    "width": {"step": 60},
+    "height": 260,
+    "encoding": {
+      "x": {
+        "field": "<DVC_METRIC_X>",
+        "type": "nominal",
+        "title": "<DVC_METRIC_X_LABEL>",
+        "sort": {"field": "crash", "op": "mean", "order": "descending"},
+        "axis": {"labelAngle": 0}
+      },
+      "y": {
+        "aggregate": "count",
+        "type": "quantitative",
+        "title": "Trials",
+        "axis": {"values": [0, 1, 2], "format": ".0f"}
+      },
+      "color": {
+        "field": "outcome",
+        "type": "nominal",
+        "title": "Outcome",
+        "sort": ["race_finished", "crash", "stall", "incomplete"],
+        "scale": {
+          "domain": ["race_finished", "crash", "stall", "incomplete"],
+          "range": ["#2ca02c", "#d62728", "#ff7f0e", "#7f7f7f"]
+        },
+        "legend": {
+          "labelExpr": "datum.value == 'race_finished' ? 'Finished' : datum.value == 'crash' ? 'Crash' : datum.value == 'stall' ? 'Stall' : 'Incomplete'"
+        }
+      },
+      "tooltip": [
+        {"field": "<DVC_METRIC_X>", "type": "nominal", "title": "<DVC_METRIC_X_LABEL>"},
+        {"field": "controller", "type": "nominal", "title": "Controller"},
+        {"field": "outcome", "type": "nominal", "title": "Outcome"},
+        {"aggregate": "count", "type": "quantitative", "title": "Trials"}
+      ]
+    }
+  },
+  "config": {
+    "font": "CMU Serif",
+    "title": {"font": "CMU Serif", "anchor": "middle", "fontSize": 22.5, "fontWeight": "normal"},
+    "axis": {"labelFont": "CMU Serif", "titleFont": "CMU Serif", "titleFontWeight": "normal", "labelFontSize": 16.5, "titleFontSize": 18},
+    "legend": {"labelFont": "CMU Serif", "titleFont": "CMU Serif", "titleFontWeight": "normal", "labelFontSize": 16.5, "titleFontSize": 18, "titleLimit": 400},
+    "header": {"labelFont": "CMU Serif", "titleFont": "CMU Serif", "titleFontWeight": "normal", "labelFontSize": 18, "titleFontSize": 18},
+    "text": {"font": "CMU Serif"},
+    "view": {"stroke": "transparent"}
+  }
+}

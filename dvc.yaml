@@ -1,5 +1,7 @@
-# Two independent pipelines live in this file:
+# Independent pipelines live in this file:
 #   * reachset_sweep      - the 1080-combo matrix sweep + analysis (below).
+#   * dualguard_rc        - DualGuard-MPPI RC-car comparison.
+#   * controller_sweep    - controller x track x disturbance comparison.
 #   * reachset-recording  - hardware run -> reachset replay -> video overlay
 #                           (the stages after analyze_reachset_sweep).
 #
@@ -14,7 +16,7 @@
 #   ${key}   -> the auto-generated combination name, e.g.
 #               "0-center-0.1-1.0-uniform-True", used as the per-trial output dir.
 #
-# `analyze_reachset_sweep` depends on the whole runs/reachset_sweep directory, so
+# `analyze_reachset_sweep` depends on the whole outputs/reachset_sweep/runs directory, so
 # it transitively depends on every trial and re-runs when any trial changes.
 
 vars:
@@ -22,11 +24,12 @@ vars:
 
 stages:
   generate-raceline:
-    cmd: uv run python -m Buzzracer.buzzracer.scripts.qp_smooth full
+    cmd: uv run python -m experiments.shared.generate_raceline full
     deps:
-    - Buzzracer/buzzracer/scripts/qp_smooth.py
+    - experiments/shared/generate_raceline.py
+    - vendor/Buzzracer/buzzracer/scripts/qp_smooth.py
     outs:
-    - Buzzracer/buzzracer/data/raceline.p
+    - vendor/Buzzracer/buzzracer/data/raceline.p
 
   reachset_trial:
     matrix:
@@ -37,56 +40,88 @@ stages:
       state_noise_direction: ${sweep.state_noise_direction}
       use_reachsets: ${sweep.use_reachsets}
     cmd: >-
-      uv run python experiments/reachset_sweep.py
-      ${item} ${sim} --out-dir runs/reachset_sweep/${key}
+      uv run python -m experiments.reachset_sweep.reachset_sweep
+      ${item} ${sim} --out-dir outputs/reachset_sweep/runs/${key}
     params:
     - sim
     deps:
-    - Buzzracer/buzzracer/data/raceline.p
-    - experiments/reachset_sweep.py
-    - experiments/_env.py
-    - experiments/_buzzracer_config.py
-    - immrax_controller.py
-    - immrax_dynamic_bicycle_cartesian.py
-    - reachset_cost.py
-    - Buzzracer
-    - immrax
+    - vendor/Buzzracer/buzzracer/data/raceline.p
+    - experiments/reachset_sweep/reachset_sweep.py
+    - experiments/shared/_env.py
+    - experiments/shared/_buzzracer_config.py
+    - experiments/shared/_trial_utils.py
+    - experiments/reachset_sweep/_config.py
+    - core/immrax_controller.py
+    - core/immrax_planner.py
+    - core/immrax_dynamic_bicycle_cartesian.py
+    - core/reachset_cost.py
+    - vendor/Buzzracer
+    - vendor/immrax
     outs:
-    - runs/reachset_sweep/${key}
+    - outputs/reachset_sweep/runs/${key}
 
   # The unforeseen-crash check compares each crash's recent_unsafe_control_steps
   # against the planner's prediction horizon, so sim.horizon is a real input here
   # even though the analysis itself only reads the trial outputs.
   analyze_reachset_sweep:
-    cmd: uv run python experiments/analyze_reachset_sweep.py
+    cmd: uv run python -m experiments.reachset_sweep.analyze_reachset_sweep
     params:
     - sim.horizon
     deps:
-    - experiments/analyze_reachset_sweep.py
-    - runs/reachset_sweep
+    - experiments/reachset_sweep/analyze_reachset_sweep.py
+    - experiments/shared/analysis_utils.py
+    - outputs/reachset_sweep/runs
     outs:
-    - experiments/analysis_output/reachset_sweep/runs.csv
+    - outputs/reachset_sweep/analysis/runs.csv
     plots:
-    - experiments/analysis_output/reachset_sweep/crash_locations.svg
+    - outputs/reachset_sweep/analysis/crash_locations.svg
+    - outputs/reachset_sweep/analysis/reachset_width_growth.svg
+
+  # Counterfactual check on reachset-enabled sweep crashes: re-initialize the
+  # controller at each trial's true starting state, sample one control batch, and
+  # ask whether any disturbance within the state-noise box reaches the boundary.
+  inspect_reachset_crashes:
+    cmd: uv run python -m experiments.reachset_sweep.inspect_reachset_crashes
+    params:
+    - sim
+    deps:
+    - experiments/reachset_sweep/inspect_reachset_crashes.py
+    - experiments/reachset_sweep/reachset_sweep.py
+    - experiments/shared/_env.py
+    - experiments/shared/_buzzracer_config.py
+    - experiments/shared/_trial_utils.py
+    - experiments/reachset_sweep/_config.py
+    - outputs/reachset_sweep/analysis/runs.csv
+    - vendor/Buzzracer/buzzracer/data/raceline.p
+    - core/immrax_controller.py
+    - core/immrax_planner.py
+    - core/immrax_dynamic_bicycle_cartesian.py
+    - core/reachset_cost.py
+    - core/disturbance.py
+    - vendor/Buzzracer
+    - vendor/immrax
+    outs:
+    - outputs/reachset_sweep/crashes/smaller_unsafe_fraction.csv
+    - outputs/reachset_sweep/crashes/fully_unsafe_inspection.csv
 
   # ---- DualGuard-MPPI RC-car comparison --------------------------------
   # Rebuilds the paper's "RC warehouse" track from the HJB artifact shipped with
-  # DualGuard (`brt_rc_wh_fine_v3.mat`, dvc-tracked). The stored `lx` field is a
+  # DualGuard (`data/brt_rc_wh_fine_v3.mat`, dvc-tracked). The stored `lx` field is a
   # signed distance whose zero level set is the exact track boundary; ${track}
   # supplies the corridor buffer and the racing-line QP offset.
   reconstruct_track:
     cmd: >-
-      uv run python experiments/reconstruct_track.py
+      uv run python -m experiments.dualguard_rc.reconstruct_track
       --buffer ${track.buffer} --raceline-offset ${track.raceline_offset}
     params:
     - track
     deps:
-    - experiments/reconstruct_track.py
-    - experiments/_env.py
-    - brt_rc_wh_fine_v3.mat
-    - Buzzracer/buzzracer/scripts/qp_smooth.py
+    - experiments/dualguard_rc/reconstruct_track.py
+    - experiments/shared/_env.py
+    - data/brt_rc_wh_fine_v3.mat
+    - vendor/Buzzracer/buzzracer/scripts/qp_smooth.py
     outs:
-    - data/warehouse_track.npz
+    - outputs/dualguard_rc/warehouse_track.npz
 
   # Recreates the paper's Section VI RC-car test (3-state Dubins car, eq. 15;
   # eq.-16 cost) on that warehouse track, driven by the generalized
@@ -99,106 +134,188 @@ stages:
       cost_type: ${rc_sweep.cost_type}
       prng_seed: ${rc_sweep.prng_seed}
     cmd: >-
-      uv run python experiments/dualguard_rc_trial.py
-      ${item} ${rc} --out-dir runs/dualguard_rc/${key}
+      uv run python -m experiments.dualguard_rc.dualguard_rc_trial
+      ${item} ${rc} --out-dir outputs/dualguard_rc/runs/${key}
     params:
     - rc
     deps:
-    - experiments/dualguard_rc_trial.py
-    - experiments/_env.py
-    - immrax_dubins_car.py
-    - immrax_planner.py
-    - disturbance.py
-    - reachset_cost.py
-    - warehouse_track.py
-    - data/warehouse_track.npz
-    - Buzzracer
-    - immrax
+    - experiments/dualguard_rc/dualguard_rc_trial.py
+    - experiments/shared/frenet.py
+    - experiments/shared/_env.py
+    - core/immrax_dubins_car.py
+    - core/immrax_planner.py
+    - core/disturbance.py
+    - core/reachset_cost.py
+    - experiments/shared/warehouse_track.py
+    - outputs/dualguard_rc/warehouse_track.npz
+    - vendor/Buzzracer
+    - vendor/immrax
     outs:
-    - runs/dualguard_rc/${key}
+    - outputs/dualguard_rc/runs/${key}
 
   analyze_dualguard_rc:
-    cmd: uv run python experiments/analyze_dualguard_rc.py
+    cmd: uv run python -m experiments.dualguard_rc.analyze_dualguard_rc
     deps:
-    - experiments/analyze_dualguard_rc.py
-    - runs/dualguard_rc
+    - experiments/dualguard_rc/analyze_dualguard_rc.py
+    - experiments/shared/analysis_utils.py
+    - outputs/dualguard_rc/runs
     outs:
-    - experiments/analysis_output/dualguard_rc/summary.csv
+    - outputs/dualguard_rc/analysis/summary.csv
+
+  # ---- controller × track × disturbance comparison ---------------------
+  # Normalizes each supported Buzzracer track once into outputs/controller_sweep/track_fixtures/.
+  # `saved` loads the QP-smoothed RCP raceline from generate-raceline; small/
+  # easy/big are QP-smoothed in memory; skidpad/nascar/orca get derived arrays.
+  build_track_fixtures:
+    cmd: uv run python -m experiments.controller_sweep.build_track_fixtures
+    params:
+    - controller_sweep.track
+    deps:
+    - experiments/controller_sweep/build_track_fixtures.py
+    - experiments/controller_sweep/_track_setup.py
+    - experiments/shared/_env.py
+    - vendor/Buzzracer/buzzracer/data/raceline.p
+    - vendor/Buzzracer
+    outs:
+    - outputs/controller_sweep/track_fixtures
+
+  # One trial per controller × track × disturbance.  ${item} supplies the swept
+  # axes (a single track), ${controller} the fixed controller settings and
+  # ${sim} the disturbance structure.  The lap count and wall-clock budget are
+  # passed after ${sim} so this sweep's longer races override the reachset-sweep
+  # values.  The per-trial seed depends only on (track, disturbance) so all
+  # controllers share the same plant-noise stream.
+  controller_trial:
+    matrix:
+      controller: ${controller_sweep.controller}
+      track: ${controller_sweep.track}
+      state_noise_direction: ${controller_sweep.state_noise_direction}
+    cmd: >-
+      uv run python -m experiments.controller_sweep.controller_sweep
+      ${item} ${sim} ${controller}
+      --lap_count ${controller_sweep.lap_count}
+      --wall_clock ${controller_sweep.wall_clock}
+      --out-dir outputs/controller_sweep/runs/${key}
+    params:
+    - sim
+    - controller
+    - controller_sweep.lap_count
+    - controller_sweep.wall_clock
+    deps:
+    - outputs/controller_sweep/track_fixtures
+    - experiments/controller_sweep/controller_sweep.py
+    - experiments/shared/_env.py
+    - experiments/shared/_buzzracer_config.py
+    - experiments/shared/_trial_utils.py
+    - experiments/controller_sweep/_controller_registry.py
+    - experiments/controller_sweep/_track_registry.py
+    - experiments/controller_sweep/_extensions.py
+    - experiments/controller_sweep/raceline_track.py
+    - core/immrax_controller.py
+    - core/immrax_planner.py
+    - core/immrax_dynamic_bicycle_cartesian.py
+    - experiments/controller_sweep/shield_mppi_controller.py
+    - experiments/controller_sweep/shield_mppi_cost.py
+    - experiments/controller_sweep/shield_mppi_dynamics.py
+    - experiments/controller_sweep/mppi_controller.py
+    - experiments/controller_sweep/tube_mppi_controller.py
+    - experiments/controller_sweep/tube_ancillary.py
+    - experiments/controller_sweep/tube_mppi.py
+    - core/reachset_cost.py
+    - core/disturbance.py
+    - vendor/Buzzracer
+    - vendor/immrax
+    - vendor/Shield-MPPI
+    outs:
+    - outputs/controller_sweep/runs/${key}
+
+  analyze_controller_sweep:
+    cmd: uv run python -m experiments.controller_sweep.analyze_controller_sweep
+    params:
+    - controller_sweep.track
+    deps:
+    - experiments/controller_sweep/analyze_controller_sweep.py
+    - experiments/shared/analysis_utils.py
+    - outputs/controller_sweep/runs
+    outs:
+    - outputs/controller_sweep/analysis/runs.csv
+    - outputs/controller_sweep/analysis/summary.csv
 
   # ---- reachset-recording pipeline -------------------------------------
   # Independent DAG branch (not connected to the sweep above): a real-world
   # run is replayed to render reachable sets, then composited over a top-down
   # video of the run. The buzzracer-invoking stages (hardware_experiment,
-  # replay) write to the .dvcignore'd Buzzracer/log + gifs scratch and capture
-  # the artifacts out into runs/ via thin experiments/ wrappers, so no tracked
+  # replay) write to the .dvcignore'd vendor/Buzzracer/log + gifs scratch and capture
+  # the artifacts out into outputs/ via thin experiments/ wrappers, so no tracked
   # path ever lands inside the submodule's ignored dirs.
   hardware_experiment:
-    cmd: uv run python experiments/hardware_experiment.py --out-dir runs/stanley_immrax_exp
+    cmd: uv run python -m experiments.reachset_recording.hardware_experiment --out-dir outputs/reachset_recording/stanley_immrax_exp
     deps:
-    - experiments/hardware_experiment.py
-    - experiments/_env.py
-    - Buzzracer/buzzracer/configs/stanley_immrax_exp.xml
-    - immrax_controller.py
-    - immrax_dynamic_bicycle_cartesian.py
+    - experiments/reachset_recording/hardware_experiment.py
+    - experiments/shared/_env.py
+    - vendor/Buzzracer/buzzracer/configs/stanley_immrax_exp.xml
+    - core/immrax_controller.py
+    - core/immrax_dynamic_bicycle_cartesian.py
     outs:
-    - runs/stanley_immrax_exp
+    - outputs/reachset_recording/stanley_immrax_exp
 
   replay:
     cmd: >-
-      uv run python experiments/replay_reachsets.py
-      --log-dir runs/stanley_immrax_exp --out-dir runs/stanley_immrax_replay
+      uv run python -m experiments.reachset_recording.replay_reachsets
+      --log-dir outputs/reachset_recording/stanley_immrax_exp --out-dir outputs/reachset_recording/stanley_immrax_replay
     deps:
-    - experiments/replay_reachsets.py
-    - experiments/_env.py
-    - experiments/_buzzracer_config.py
-    - Buzzracer/buzzracer/configs/replay_immrax.xml
-    - replay_controller.py
-    - immrax_dynamic_bicycle_cartesian.py
-    - runs/stanley_immrax_exp
+    - experiments/reachset_recording/replay_reachsets.py
+    - experiments/shared/_env.py
+    - experiments/shared/_buzzracer_config.py
+    - vendor/Buzzracer/buzzracer/configs/replay_immrax.xml
+    - core/replay_controller.py
+    - core/immrax_dynamic_bicycle_cartesian.py
+    - outputs/reachset_recording/stanley_immrax_exp
     outs:
-    - runs/stanley_immrax_replay
+    - outputs/reachset_recording/stanley_immrax_replay
 
   transform_recording:
     cmd: >-
-      uv run python experiments/recording_transform.py
-      --input recordings/reachability_1_raw.MOV
-      --output runs/reachset_recording/transformed.MOV
+      uv run python -m experiments.reachset_recording.recording_transform
+      --input data/recordings/reachability_1_raw.MOV
+      --output outputs/reachset_recording/transformed.MOV
       --aspect ${recording.aspect}
     deps:
-    - experiments/recording_transform.py
-    - recordings/reachability_1_raw.MOV
-    - recordings/reachability_1_raw.MOV.corners.json
-    - recordings/reachability_1_raw.MOV.crop.json
+    - experiments/reachset_recording/recording_transform.py
+    - data/recordings/reachability_1_raw.MOV
+    - data/recordings/reachability_1_raw.MOV.corners.json
+    - data/recordings/reachability_1_raw.MOV.crop.json
     outs:
-    - runs/reachset_recording/transformed.MOV
+    - outputs/reachset_recording/transformed.MOV
 
   blend_retime:
     cmd: >-
-      uv run python experiments/blend_retime_reachsets.py
-      --transformed-recording runs/reachset_recording/transformed.MOV
-      --controller-visualization runs/stanley_immrax_replay/reachsets.webp
-      --controller-data runs/stanley_immrax_replay/timestamps.pkl
-      --output runs/reachset_recording/final.MOV
+      uv run python -m experiments.reachset_recording.blend_retime_reachsets
+      --transformed-recording outputs/reachset_recording/transformed.MOV
+      --controller-visualization outputs/reachset_recording/stanley_immrax_replay/reachsets.webp
+      --controller-data outputs/reachset_recording/stanley_immrax_replay/timestamps.pkl
+      --output outputs/reachset_recording/final.MOV
       --fps ${recording.fps} --blend-mode ${recording.blend_mode} --alpha ${recording.alpha}
     deps:
-    - experiments/blend_retime_reachsets.py
-    - runs/reachset_recording/transformed.MOV
-    - runs/stanley_immrax_replay/reachsets.webp
-    - runs/stanley_immrax_replay/timestamps.pkl
+    - experiments/reachset_recording/blend_retime_reachsets.py
+    - outputs/reachset_recording/transformed.MOV
+    - outputs/reachset_recording/stanley_immrax_replay/reachsets.webp
+    - outputs/reachset_recording/stanley_immrax_replay/timestamps.pkl
     outs:
-    - runs/reachset_recording/final.MOV
+    - outputs/reachset_recording/final.MOV
 
 # Vega plots over the aggregated sweep results. Each plot binds
-# experiments/analysis_output/reachset_sweep/runs.csv as its data source
+# outputs/reachset_sweep/analysis/runs.csv as its data source
 # (creating the dependency) and renders it through a custom Vega-Lite
 # template that does its own filtering / aggregation. The x/y fields below
 # only bind the data file; `x` also feeds the template's <DVC_METRIC_X>
 # anchor where present, and `title`/`x_label` feed <DVC_METRIC_TITLE> /
 # <DVC_METRIC_X_LABEL>. The template's own encodings otherwise take over.
 #
-# Each failure mode (crash / stall) gets its own standalone plot rather than a
-# faceted row inside a combined figure. Both versions reuse the same template:
-# the mode is passed through the otherwise-unused `y_label` property, which the
+# Each outcome (crash / stall / race_finished) gets its own standalone plot
+# rather than a faceted row inside a combined figure. All versions reuse the
+# same template: the mode is passed through the otherwise-unused `y_label`
+# property, which the
 # templates splice into their `datum.outcome == '...'` filter via the
 # <DVC_METRIC_Y_LABEL> anchor. (`y_label` is free because these templates set
 # their y-axis titles inline; it is never rendered as a label.)
@@ -210,58 +327,82 @@ stages:
 # velocity_scale_factor) side by side in a single strip.
 plots:
 - crashes_by_offset:
-    template: experiments/plot_templates/failures_by_offset.json
+    template: experiments/reachset_sweep/plot_templates/failures_by_offset.json
     x: init_offset_name
     y:
-      experiments/analysis_output/reachset_sweep/runs.csv: outcome
+      outputs/reachset_sweep/analysis/runs.csv: outcome
     title: Crash count by initial lateral offset
     y_label: crash
 - stalls_by_offset:
-    template: experiments/plot_templates/failures_by_offset.json
+    template: experiments/reachset_sweep/plot_templates/failures_by_offset.json
     x: init_offset_name
     y:
-      experiments/analysis_output/reachset_sweep/runs.csv: outcome
+      outputs/reachset_sweep/analysis/runs.csv: outcome
     title: Stall count by initial lateral offset
     y_label: stall
 - crash_unsafe_fraction_hist:
-    template: experiments/plot_templates/outcome_metric_hist.json
+    template: experiments/reachset_sweep/plot_templates/outcome_metric_hist.json
     x: unsafe_fraction
     y:
-      experiments/analysis_output/reachset_sweep/runs.csv: unsafe_fraction
+      outputs/reachset_sweep/analysis/runs.csv: unsafe_fraction
     title: Distribution of unsafe-step fraction among crashed runs
     x_label: Fraction of control steps flagged unsafe
     y_label: crash
 - stall_unsafe_fraction_hist:
-    template: experiments/plot_templates/outcome_metric_hist.json
+    template: experiments/reachset_sweep/plot_templates/outcome_metric_hist.json
     x: unsafe_fraction
     y:
-      experiments/analysis_output/reachset_sweep/runs.csv: unsafe_fraction
+      outputs/reachset_sweep/analysis/runs.csv: unsafe_fraction
     title: Distribution of unsafe-step fraction among stalled runs
     x_label: Fraction of control steps flagged unsafe
     y_label: stall
 - crash_distance_progressed_hist:
-    template: experiments/plot_templates/outcome_metric_hist.json
+    template: experiments/reachset_sweep/plot_templates/outcome_metric_hist.json
     x: distance_progressed
     y:
-      experiments/analysis_output/reachset_sweep/runs.csv: distance_progressed
+      outputs/reachset_sweep/analysis/runs.csv: distance_progressed
     title: Distribution of distance progressed among crashed runs
     x_label: Distance progressed (m)
     y_label: crash
 - stall_distance_progressed_hist:
-    template: experiments/plot_templates/outcome_metric_hist.json
+    template: experiments/reachset_sweep/plot_templates/outcome_metric_hist.json
     x: distance_progressed
     y:
-      experiments/analysis_output/reachset_sweep/runs.csv: distance_progressed
+      outputs/reachset_sweep/analysis/runs.csv: distance_progressed
     title: Distribution of distance progressed among stalled runs
     x_label: Distance progressed (m)
     y_label: stall
+- crash_safe_sample_fraction_hist:
+    template: experiments/reachset_sweep/plot_templates/outcome_metric_hist.json
+    x: safe_sample_fraction
+    y:
+      outputs/reachset_sweep/analysis/runs.csv: safe_sample_fraction
+    title: Distribution of safe sampled-control fraction among crashed runs
+    x_label: Fraction of sampled controls predicted crash-free
+    y_label: crash
+- stall_safe_sample_fraction_hist:
+    template: experiments/reachset_sweep/plot_templates/outcome_metric_hist.json
+    x: safe_sample_fraction
+    y:
+      outputs/reachset_sweep/analysis/runs.csv: safe_sample_fraction
+    title: Distribution of safe sampled-control fraction among stalled runs
+    x_label: Fraction of sampled controls predicted crash-free
+    y_label: stall
+- success_safe_sample_fraction_hist:
+    template: experiments/reachset_sweep/plot_templates/outcome_metric_hist.json
+    x: safe_sample_fraction
+    y:
+      outputs/reachset_sweep/analysis/runs.csv: safe_sample_fraction
+    title: Distribution of safe sampled-control fraction among successful runs
+    x_label: Fraction of sampled controls predicted crash-free
+    y_label: race_finished
 - success_count_by_variable:
-    template: experiments/plot_templates/success_count_by_variable.json
+    template: experiments/reachset_sweep/plot_templates/success_count_by_variable.json
     x: use_reachsets
     y:
-      experiments/analysis_output/reachset_sweep/runs.csv: average_lap_time
+      outputs/reachset_sweep/analysis/runs.csv: average_lap_time
 - success_laptime_by_variable:
-    template: experiments/plot_templates/success_laptime_by_variable.json
+    template: experiments/reachset_sweep/plot_templates/success_laptime_by_variable.json
     x: use_reachsets
     y:
-      experiments/analysis_output/reachset_sweep/runs.csv: average_lap_time
+      outputs/reachset_sweep/analysis/runs.csv: average_lap_time

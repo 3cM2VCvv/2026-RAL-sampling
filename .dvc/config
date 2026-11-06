@@ -1,0 +1,4 @@
+[core]
+    analytics = false
+[plots]
+    html_template = plots_html_template.html

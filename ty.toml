@@ -1,2 +1,10 @@
 [environment]
-extra-paths = ["./Buzzracer"]
+extra-paths = [
+    "./vendor/Buzzracer",
+    "./core",
+    "./experiments/shared",
+    "./experiments/reachset_sweep",
+    "./experiments/controller_sweep",
+    "./experiments/dualguard_rc",
+    "./experiments/reachset_recording",
+]

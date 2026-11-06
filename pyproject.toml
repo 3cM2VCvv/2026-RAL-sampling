@@ -1,7 +1,7 @@
 [project]
 name = "online-reachability"
 version = "0.1.0"
-description = "Add your description here"
+description = "Reachset-aware sampling MPC for autonomous racing"
 readme = "README.md"
 requires-python = ">=3.12.0,<3.13"
 dependencies = [
@@ -44,8 +44,8 @@ dependencies = [
 
 [tool.uv.workspace]
 members = [
-    "immrax",
-    "Buzzracer",
+    "vendor/immrax",
+    "vendor/Buzzracer",
 ]
 
 [tool.uv.sources]

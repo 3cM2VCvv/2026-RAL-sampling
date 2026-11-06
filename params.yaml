@@ -1,4 +1,4 @@
-# DVC parameters for the reachset_sweep pipeline.
+# DVC parameters for the sweep pipelines.
 #
 # `sweep` defines the swept axes; each axis is referenced as a matrix variable
 # in dvc.yaml, producing one `reachset_trial` stage per combination
@@ -82,3 +82,45 @@ sim:
   horizon: 30 # controller/@horizon
   max_speed: 2.0 # controller/@max_speed
   prng_seed: 42 # deterministic base seed (combined per-trial)
+
+# ---------------------------------------------------------------------------
+# Controller × track × disturbance sweep (controller_trial).
+#
+# `controller_sweep` defines the swept axes: 1 track x 4 controllers x
+# 2 disturbances = 8 trials, each run to 10 completed laps.  `controller` holds
+# the fixed controller settings passed to every trial; `sim` above supplies the
+# fixed disturbance structure and simulation limits.  `lap_count` and
+# `wall_clock` here override the reachset-sweep values from `sim` (the trial
+# command passes them after `${sim}`, so the later flags win).
+controller_sweep:
+  controller: [immrax, shieldmppi, mppi, tubemppi]
+  track: [saved]
+  state_noise_direction: [uniform, adversarial_away]
+  lap_count: 10 # laps per trial
+  wall_clock: 180 # [s] max simulated time, headroom for 10 laps
+
+controller:
+  use_reachsets: true # reachset-aware rollout cost (fixed for this sweep)
+  centering_weight_factor: 1.0
+  velocity_scale_factor: 1.0
+  # Shield-MPPI knobs (ImmraxController ignores them).
+  shield_num_samples: 1024 # MPPI rollouts per step
+  shield_param_lambda: 1.0 # softmax temperature and free-energy weight
+  shield_param_alpha: 0.0 # MPPI free-energy gamma = lambda * (1 - alpha)
+  shield_param_beta: 0.5 # CBF class-K: alpha = 1 - beta
+  shield_cbf_cost_weight: 1000.0 # weight on the vendored DCBF penalty
+  shield_w_T: 0.0 # CBF width [m]; 0 = 2 * min(min(left), min(right))
+  shield_repair_horizon: 10 # controls optimized by the local repair
+  shield_repair_steps: 20 # BFGS iterations per control step
+  # MPPI knobs (ImmraxController / ShieldMPPIController ignore them).
+  mppi_num_samples: 1024 # vanilla MPPI rollouts per step
+  mppi_param_lambda: 1.0 # softmax temperature and Sigma-weighted control cost
+  # Tube-MPPI knobs (ImmraxController / ShieldMPPIController ignore them).
+  tube_control_cost_lambda: 0.03 # weight of lambda*u^T Sigma^-1 u
+  tube_ancillary_horizon: 0 # 0 = planning_horizon // 2
+  tube_ancillary_iterations: 1 # iLQG passes per control step
+  tube_ancillary_mu: 0.01 # initial Riccati regularization
+  tube_ancillary_mu_factor: 5.0 # regularization adaptation factor
+  tube_ancillary_q_scale: 1.0 # scales the state tracking weights
+  tube_ancillary_r_scale: 1.0 # scales the control tracking weights
+  tube_ancillary_terminal_scale: 10.0 # terminal weight multiplier
